@@ -1,5 +1,5 @@
 import { ReactNode } from "react"
-import NavigationBar from "../components/navigationBar/NavigationBar"
+import NavigationBar from "../components/NavigationBar/NavigationBar"
 
 export default function Layout({
     children,
