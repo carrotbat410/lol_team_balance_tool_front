@@ -1,4 +1,5 @@
 import { ReactNode } from "react"
+import NavigationBar from "../components/navigationBar/NavigationBar"
 
 export default function Layout({
     children,
@@ -7,7 +8,7 @@ export default function Layout({
 }) {
     return (
         <div>
-            <div>임시 네비게이션 바</div>
+            <NavigationBar/>
             {children}
         </div>
     )
