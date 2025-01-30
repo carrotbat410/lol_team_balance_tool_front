@@ -22,8 +22,10 @@ a {
 }
 
 .container {
-  background-color: #0f1017;
+  /* background-color: #0f1017; */
   /* background-color: #98cc86; */
+  background-color: #0A130C;
+
 
   /* border: 5px solid red; */
   display: flex;
