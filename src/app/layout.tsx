@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Footer from "./components/Footer/Footer";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -11,10 +12,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
     <html lang="ko">
-      <body className={`tmp`}>  {/* // TODO <----- 나중에 바꾸기 */}
-        {children}
+      <body className="container">
+        <main className="main">{children}</main>
+        <footer className="footer">
+          <Footer/>
+        </footer>
       </body>
     </html>
   );

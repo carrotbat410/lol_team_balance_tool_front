@@ -5,12 +5,29 @@
 }
 
 html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
+body,
+footer {
+  min-width: 1080px;
+  /* min-height: 100vh; */
+  /* overflow-x: hidden; */
 }
+
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.container {
+  /* background-color: #0f1017; */
+  background-color: #98cc86;
+
+  border: 5px solid red;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* 화면 전체 높이를 차지하도록 설정 */
+}
+
+.main {
+  flex: 1; /* 컨텐츠 영역이 가능한 최대한 차지하도록 설정 */
 }
