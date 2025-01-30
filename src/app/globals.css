@@ -3,7 +3,7 @@
   padding: 0;
   margin: 0;
   color: #E8E8E8;
-  border: 1px solid #313635;
+
   background-color: #1F1F1F;
   
 }
@@ -20,6 +20,7 @@ footer {
 a {
   color: inherit;
   text-decoration: none;
+  border: none;
 }
 
 .container {
@@ -36,4 +37,6 @@ a {
 
 .main {
   flex: 1; /* 컨텐츠 영역이 가능한 최대한 차지하도록 설정 */
+  border: 5px solid red;
+  padding: 0px 150px;
 }

@@ -1,3 +1,16 @@
 .container {
-    border: 1px solid black;
+    display: flex;
+    width: 100%;
+    text-align: center;
+    height: 60px;
+    border: 1px solid #313635; 
+    background-color: #4D5156;
+
+
+
+    @media (min-width: 1220px) {
+        /* background-color: red; */
+        font-size: 18px;
+        height: 80px;
+    }
 }
