@@ -3,8 +3,8 @@ import NavigationItem from "./NavivationItem";
 
 const menuItems = [
   { label: "로고", href: "/" },
-  { label: "tmp1", href: "/freeBoard" },
-  { label: "tmp2", href: "/teamBalance" },
+  { label: "커뮤니티", href: "/freeBoard" },
+  { label: "팀짜기", href: "/teamBalance" },
 ];
 
 export default function NavigationBar() {
