@@ -10,7 +10,9 @@ export default function Layout({
     return (
         <div className={styles.container}>
             <NavigationBar/>
-            {children}
+            <div className={styles.page_container}>
+                {children}
+            </div>
         </div>
     )
 }
