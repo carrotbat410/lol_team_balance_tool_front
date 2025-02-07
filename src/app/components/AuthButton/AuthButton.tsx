@@ -2,7 +2,6 @@
 
 import { useSession } from "@/app/SessionContext";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import LoginButton from "./LoginButton";
 
 export default function AuthButton() {
