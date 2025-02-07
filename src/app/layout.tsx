@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "./components/Footer/Footer";
+import { SessionProvider } from "./SessionContext";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,10 +17,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="container">
-        <main className="main">{children}</main>
-        <footer className="footer">
-          <Footer/>
-        </footer>
+        <SessionProvider>
+          <main className="main">{children}</main>
+          <footer className="footer">
+            <Footer/>
+          </footer>
+        </SessionProvider>
       </body>
     </html>
   );

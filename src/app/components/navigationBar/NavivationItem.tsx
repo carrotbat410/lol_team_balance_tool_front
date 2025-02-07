@@ -2,6 +2,7 @@ import Link from "next/link";
 import styles from "./NavivationItem.module.css"
 import Image from "next/image";
 import logoImage from "/public/images/logo.webp"
+import AuthButton from "@/app/components/AuthButton/AuthButton";
 
 interface NavigationItemProps {
     label: string;
@@ -23,6 +24,12 @@ export default function NavigationItem({ label, href }: NavigationItemProps)  {
                     />
                 </Link>
             </div>
+        )
+    }
+
+    if(label == "로그인") {
+        return (
+            <AuthButton/>
         )
     }
 

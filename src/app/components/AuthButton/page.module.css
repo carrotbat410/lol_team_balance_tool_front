@@ -1,0 +1,7 @@
+.login_container, .login_container > a {
+    background-color: inherit;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
