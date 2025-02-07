@@ -1,16 +1,17 @@
 .container {
-    width: 100vw;
+    /* width: 100vw; */
+    width: 100%;
     text-align: center;
     background-color: white;
     color: black;
-    border: 1px solid black;
+    border: 3px solid blue;
     font-size: 16px;
 
     height: 60px;
 
 
     @media (min-width: 1920px) {
-        background-color: red;
+        /* background-color: red; */
         font-size: 18px;
     }
 }
