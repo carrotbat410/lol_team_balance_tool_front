@@ -4,6 +4,7 @@ import { useSession } from "@/app/SessionContext";
 import styles from "./page.module.css";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function Page() {
   const { user } = useSession();
@@ -42,13 +43,13 @@ export default function Page() {
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <div>로그인 페이지</div>
-        <div>
+        <div className={styles.title}>로그인</div>
+        <div className={styles.input_container}>
           <input type="text" placeholder="아이디" onChange={onChangeInputId}/>
           <input type="text" placeholder="비밀번호" onChange={onChangeInputPassword}/>
-          <button onClick={()=>onClickLoginButton()}>로그인</button>
+          <button className={styles.login_button} onClick={()=>onClickLoginButton()}>→</button>
+          <Link href="/signup" className={styles.signup_div}>계정 생성</Link>
         </div>
-
       </main>
     </div>
   );
