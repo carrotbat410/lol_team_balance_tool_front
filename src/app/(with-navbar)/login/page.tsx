@@ -43,12 +43,19 @@ export default function Page() {
   return (
     <div className={styles.container}>
       <main className={styles.main}>
-        <div className={styles.title}>로그인</div>
+        <div className={styles.header}>
+          <h1 className={styles.title}>로그인</h1>
+          <h2 className={styles.description}>내전 게임을 즐기기 위해 다양한 서비스를 제공하는 <p></p>롤 내전 도우미에 오신것을 환영합니다.</h2>
+        </div>
         <div className={styles.input_container}>
           <input type="text" placeholder="아이디" onChange={onChangeInputId}/>
           <input type="text" placeholder="비밀번호" onChange={onChangeInputPassword}/>
+          {/* //TODO 입력란이 비어있으면 엔터색상 회색으로 */}
           <button className={styles.login_button} onClick={()=>onClickLoginButton()}>→</button>
-          <Link href="/signup" className={styles.signup_div}>계정 생성</Link>
+          <div className={styles.link_container}>
+            <Link href="/findId" className={styles.link_div}>아이디 / 비밀번호 찾기</Link>
+            <Link href="/signup" className={styles.link_div}>계정 생성</Link>
+          </div>
         </div>
       </main>
     </div>
