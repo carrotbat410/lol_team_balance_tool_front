@@ -2,9 +2,9 @@
   box-sizing: border-box;
   padding: 0;
   margin: 0;
-  color: #E8E8E8;
+  color: #F7F7FF;
 
-  background-color: #1F1F1F;
+  background-color: #1C1C1F;
   
 }
 
@@ -37,6 +37,6 @@ a {
 
 .main {
   flex: 1; /* 컨텐츠 영역이 가능한 최대한 차지하도록 설정 */
-  border: 5px solid red;
+  /* border: 5px solid red; */
   padding: 0px 150px;
 }

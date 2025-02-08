@@ -18,8 +18,8 @@ export default function NavigationItem({ label, href }: NavigationItemProps)  {
                 <Link href={href} className={styles.navItem}>
                     <Image 
                     src={logoImage}
-                    width={60}
-                    height={30}
+                    width={70}
+                    height={40}
                     alt="logo image"
                     />
                 </Link>

@@ -4,8 +4,8 @@
     text-align: center;
     height: 60px;
     border: 1px solid #313635; 
-    background-color: #4D5156;
-
+    /* background-color: #4D5156; */
+    background-color: inherit;
 
 
     @media (min-width: 1220px) {
