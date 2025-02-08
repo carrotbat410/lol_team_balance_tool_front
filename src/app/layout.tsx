@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
+import { Noto_Sans_KR } from 'next/font/google';
 import "./globals.css";
 import Footer from "./components/Footer/Footer";
 import { SessionProvider } from "./SessionContext";
+
+const notoSansKR = Noto_Sans_KR({
+  weight: ['100', '300', '400', '500', '700', '900'], // 사용하고자 하는 폰트 굵기 설정
+  subsets: ['latin', 'cyrillic'], // 언어 설정 (필요에 따라 추가)
+  display: 'swap', // 폰트 로딩 최적화
+});
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -16,13 +24,15 @@ export default function RootLayout({
 
   return (
     <html lang="ko">
-      <body className="container">
-        <SessionProvider>
-          <main className="main">{children}</main>
-          <footer className="footer">
-            <Footer/>
-          </footer>
-        </SessionProvider>
+      <body className={notoSansKR.className}>
+        <div className="container">
+          <SessionProvider>
+            <main className="main">{children}</main>
+            <footer className="footer">
+              <Footer/>
+            </footer>
+          </SessionProvider>
+        </div>
       </body>
     </html>
   );
