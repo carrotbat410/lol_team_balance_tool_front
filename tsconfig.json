@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "noImplicitAny": false, //TODO 이 설정 고민해보기
     "plugins": [
       {
         "name": "next"
