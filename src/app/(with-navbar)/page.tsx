@@ -1,6 +1,11 @@
+'use client'
+import { useSession } from "../SessionContext";
 import styles from "./page.module.css";
 
 export default function Home() {
+
+  const { user } = useSession();
+  console.log("인덱스페이지에서 user:", user)
 
   return (
     <div className={styles.page}>

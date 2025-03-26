@@ -10,26 +10,28 @@ export default function Page() {
   const { user } = useSession();
   const router = useRouter();
 
-  const [id, setId] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const onChangeInputId = (e) => {
-    setId(e.target.value);
+  const onChangeInputUsername = (e) => {
+    setUsername(e.target.value);
   }
   const onChangeInputPassword = (e) => {
     setPassword(e.target.value);
   }
 
   const onClickLoginButton = async () => {
-    console.log(`로그인버튼클릭함---- id:${id} password:${password}`)
-    // await fetch("https://localhost:8080/api/auth/login",{
-      // method: "POST",
-      // headers: {
-      //   "Content-Type": "application/json",
-      // },
-      // body: JSON.stringify({ id, password }),
-      // credentials: "include",
-    // })
+    await fetch("http://localhost:8080/login",{
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+      credentials: "include",
+      mode: 'cors'
+    })
+
+    router.push("/");
   }
 
   useEffect(() => {
@@ -48,8 +50,8 @@ export default function Page() {
           <h2 className={styles.description}>내전 게임을 즐기기 위해 다양한 서비스를 제공하는 <p></p>롤 내전 도우미에 오신것을 환영합니다.</h2>
         </div>
         <div className={styles.input_container}>
-          <input type="text" placeholder="아이디" onChange={onChangeInputId}/>
-          <input type="text" placeholder="비밀번호" onChange={onChangeInputPassword}/>
+          <input type="text" placeholder="아이디" onChange={onChangeInputUsername}/>
+          <input type="password" placeholder="비밀번호" onChange={onChangeInputPassword}/>
           {/* //TODO 입력란이 비어있으면 엔터색상 회색으로 */}
           <button className={styles.login_button} onClick={()=>onClickLoginButton()}>→</button>
           <div className={styles.link_container}>

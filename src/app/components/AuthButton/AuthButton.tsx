@@ -1,13 +1,14 @@
 "use client";
 
 import { useSession } from "@/app/SessionContext";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import LoginButton from "./LoginButton";
 
 export default function AuthButton() {
   const { user, setUser }= useSession();
-  const router = useRouter();
+  // const router = useRouter();
 
+  console.log("user:", user)
   const handleLogout = async () => {
     // await fetch("http://localhost:8080/api/logout", {
     //   method: "POST",
