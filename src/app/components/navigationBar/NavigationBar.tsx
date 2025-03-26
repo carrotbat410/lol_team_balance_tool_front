@@ -9,7 +9,6 @@ const menuItems = [
   { label: "커뮤니티", href: "/freeBoard" },
   { label: "팀짜기", href: "/teamBalance" },
   { label: "문의하기", href: "/tmp1" },
-  { label: "로그인", href: "/login" },
 ];
 
 export default function NavigationBar() {
