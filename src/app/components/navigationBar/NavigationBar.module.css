@@ -14,3 +14,35 @@
         height: 80px;
     }
 }
+
+.logo {
+    border: 1px solid red;
+    width: 120px;
+    height: 100%;
+    position: relative;
+    object-fit: cover;
+
+    @media (min-width: 1220px) {
+        width: 200px;
+    }
+    
+}
+
+.center_div {
+    border: 1px solid red;
+    display: flex;
+    width: 100%; 
+}
+
+.auth_div {
+    width: 200px;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid red;
+    
+    @media (min-width: 1220px) {
+        width: 300px;
+    }
+}

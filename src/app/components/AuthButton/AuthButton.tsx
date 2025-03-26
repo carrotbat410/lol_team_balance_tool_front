@@ -8,7 +8,7 @@ export default function AuthButton() {
   const { user, setUser }= useSession();
   // const router = useRouter();
 
-  console.log("user:", user)
+  console.log("Auth button안에서의 user:", user)
   const handleLogout = async () => {
     // await fetch("http://localhost:8080/api/logout", {
     //   method: "POST",
