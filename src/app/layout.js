@@ -1,15 +1,25 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Link from 'next/link';
+import Image from 'next/image';
+import NavbarRight from './components/NavbarRight';
+import { Noto_Sans_KR } from 'next/font/google';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const notoSansKR = Noto_Sans_KR({
+  weight: ['100', '300', '400', '500'], // 사용하고자 하는 폰트 굵기 설정
+  subsets: ['latin', 'cyrillic'], // 언어 설정 (필요에 따라 추가)
+  display: 'swap', // 폰트 로딩 최적화
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// const geistSans = Geist({
+//   variable: "--font-geist-sans",
+//   subsets: ["latin"],
+// });
+
+// const geistMono = Geist_Mono({
+//   variable: "--font-geist-mono",
+//   subsets: ["lat  in"],
+// });
 
 export const metadata = {
   title: "Create Next App",
@@ -19,8 +29,24 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
-      <body>
-        {children}
+      <body className={notoSansKR.className}>
+        <div className="logo-wrap container">
+          <Link href="/" className="logo">
+            <Image src="/logo.webp" alt="로고" width={120} height={20} />
+          </Link>
+        </div>
+        <nav className="navbar container">
+          <div className="navbar-inner">
+            <ul className="nav-menu">
+              <li><Link href="/community">커뮤니티</Link></li>
+              <li><Link href="/team">팀짜기</Link></li>
+            </ul>
+            <div className="nav-right">
+              <NavbarRight />
+            </div>
+          </div>
+        </nav>
+        <main className="container">{children}</main>
       </body>
     </html>
   );
