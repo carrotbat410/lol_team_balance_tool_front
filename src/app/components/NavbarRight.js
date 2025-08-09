@@ -2,9 +2,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function NavbarRight() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+  
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
@@ -18,7 +21,9 @@ export default function NavbarRight() {
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
     window.dispatchEvent(new Event('storage'));
+    router.push('/');
   };
 
   if (isLoggedIn) {
