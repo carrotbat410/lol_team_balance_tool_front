@@ -240,7 +240,7 @@ button, input, select, textarea {
   transition: background 0.15s;
 }
 .login-form button:hover {
-  background: #23232b;
+  background: #44444a;
 }
 
 .login-error {
@@ -282,4 +282,24 @@ button, input, select, textarea {
 }
 .logout-btn:hover {
   background: #23232b;
+}
+
+.signup-link {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  color: #3b82f6;
+  font-size: 0.95em;
+  transition: color 0.15s;
+}
+.signup-link:hover {
+  color: #2563eb;
+}
+
+.input-hint {
+  color: #f5f6fa;
+  font-size: 0.85em;
+  margin-top: -8px;
+  margin-bottom: 8px;
+  padding-left: 2px;
 }

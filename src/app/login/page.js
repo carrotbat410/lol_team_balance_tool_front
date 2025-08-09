@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -12,9 +13,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     const formData = new FormData();
-    formData.append("username", username);
+    formData.append("userId", username);
     formData.append("password", password);
     try {
+      // * INFO `fetch` 함수의 `body`에 `FormData` 객체를 전달하면, 브라우저는 자동으로 `Content-Type` 헤더를 `multipart/form-data`로 설정함.
+      // * `Content-Type`을 수동으로 설정하면 안 됨. 수동 설정시 form-data 의 boundary 가 누락되어 서버에서 파싱 불가해짐.
       const res = await fetch("http://localhost:8080/login", {
         method: "POST",
         body: formData,
@@ -46,6 +49,7 @@ export default function LoginPage() {
         <input id="password" name="password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
         {error && <div className="login-error">{error}</div>}
         <button type="submit">로그인</button>
+        <Link href="/signup" className="signup-link">회원가입</Link>
       </form>
     </div>
   );
