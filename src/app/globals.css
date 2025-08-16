@@ -303,3 +303,173 @@ button, input, select, textarea {
   margin-bottom: 8px;
   padding-left: 2px;
 }
+
+.login-notice {
+  margin-top: 16px;
+  padding: 12px;
+  background: #18181c;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.9em;
+  color: #a4b0be;
+  border: 1px solid #31313c;
+}
+
+/* 팀짜기 페이지 스타일 */
+.team-page {
+  margin-top: 32px;
+}
+.team-layout {
+  display: grid;
+  grid-template-columns: 1fr 500px;
+  gap: 32px;
+  min-height: 600px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-right: 0;
+}
+.team-left {
+  background: #23232b;
+  border-radius: 10px;
+  padding: 24px;
+  height: fit-content;
+}
+.team-right {
+  background: #23232b;
+  border-radius: 10px;
+  padding: 24px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  justify-self: end;
+  margin-right: -24px;
+}
+.team-left h2, .team-right h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #f5f6fa;
+}
+.summoner-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  flex: 1;
+}
+.add-summoner-section {
+  margin-top: 16px;
+  padding: 12px;
+  background: #18181c;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #31313c;
+}
+.add-summoner-btn {
+  background: #44444a;
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.add-summoner-btn:hover {
+  background: #23232b;
+}
+.summoner-card {
+  background: #18181c;
+  border-radius: 7px;
+  padding: 10px;
+  border: 1px solid #31313c;
+  transition: border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.summoner-card:hover {
+  border-color: #44444a;
+}
+.summoner-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.summoner-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: 10px;
+}
+.action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.refresh-btn {
+  background: #44444a;
+  color: #f5f6fa;
+}
+.refresh-btn:hover {
+  background: #23232b;
+}
+.delete-btn {
+  background: #ff4d4f;
+  color: #fff;
+}
+.delete-btn:hover {
+  background: #ff7875;
+}
+.profile-icon {
+  position: relative;
+  flex-shrink: 0;
+}
+.profile-icon img {
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+}
+.level {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #23232b;
+  color: #f5f6fa;
+  font-size: 0.7em;
+  font-weight: 600;
+  padding: 1px 3px;
+  border-radius: 3px;
+  border: 1px solid #44444a;
+}
+.summoner-info {
+  flex: 1;
+  min-width: 0;
+}
+.summoner-name {
+  font-weight: 600;
+  color: #f5f6fa;
+  margin-bottom: 3px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.summoner-tier {
+  font-weight: 600;
+  margin-bottom: 3px;
+  font-size: 0.85em;
+}
+.summoner-stats {
+  font-size: 0.75em;
+  color: #a4b0be;
+}
