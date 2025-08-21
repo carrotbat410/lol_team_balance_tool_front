@@ -6,6 +6,17 @@ export default function TeamPage() {
   const [summoners, setSummoners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [iconVersion, setIconVersion] = useState("14.24.1");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [summonerName, setSummonerName] = useState("");
+  const [tagLine, setTagLine] = useState("");
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const handleSessionExpired = () => {
+    setSessionExpired(true);
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    window.dispatchEvent(new Event('storage'));
+  };
 
   const getLatestIconImgVersion = async () => {
     try {
@@ -19,6 +30,69 @@ export default function TeamPage() {
       console.error("라이엇에서 version 가져오기 실패:", err);
     }
     return "14.24.1";
+  };
+
+  const handleAddSummoner = () => {
+    setShowAddForm(true);
+  };
+
+  const handleSubmitAdd = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const res = await fetch('http://localhost:8080/summoner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          summonerName: summonerName,
+          tagLine: tagLine
+        })
+      });
+      
+      if (res.status === 403) {
+        handleSessionExpired();
+        return;
+      }
+      
+      if (res.ok) {
+        // 성공 시 소환사 목록 새로고침
+        const summonersRes = await fetch('http://localhost:8080/summoners?size=30', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (summonersRes.status === 403) {
+          handleSessionExpired();
+          return;
+        }
+        
+        if (summonersRes.ok) {
+          const data = await summonersRes.json();
+          setSummoners(data.data.content);
+        }
+        
+        setSummonerName("");
+        setTagLine("");
+        setShowAddForm(false);
+      } else {
+        console.error("소환사 추가 실패:", res.status);
+        // TODO: 에러 메시지 표시
+      }
+    } catch (error) {
+      console.error("소환사 추가 중 오류:", error);
+      // TODO: 에러 메시지 표시
+    }
+  };
+
+  const handleCancelAdd = () => {
+    setSummonerName("");
+    setTagLine("");
+    setShowAddForm(false);
   };
 
   useEffect(() => {
@@ -37,6 +111,11 @@ export default function TeamPage() {
                 'Authorization': `Bearer ${token}`
               }
             });
+            
+            if (res.status === 403) {
+              handleSessionExpired();
+              return;
+            }
             
             if (res.ok) {
               const data = await res.json();
@@ -263,6 +342,11 @@ export default function TeamPage() {
 
   return (
     <div className="team-page container">
+      {sessionExpired && (
+        <div className="session-expired-notice">
+          세션이 만료되었습니다. 다시 로그인 후 이용해주세요.
+        </div>
+      )}
       <div className="team-layout">
         <div className="team-left">
           <h2>팀 배치</h2>
@@ -315,7 +399,34 @@ export default function TeamPage() {
             </div>
           ) : (
             <div className="add-summoner-section">
-              <button className="add-summoner-btn">소환사 추가</button>
+              {!showAddForm ? (
+                <button className="add-summoner-btn" onClick={handleAddSummoner}>소환사 추가</button>
+              ) : (
+                <form className="add-summoner-form" onSubmit={handleSubmitAdd}>
+                  <div className="form-row">
+                    <input
+                      type="text"
+                      placeholder="소환사명"
+                      value={summonerName}
+                      onChange={(e) => setSummonerName(e.target.value)}
+                      required
+                      className="summoner-input"
+                    />
+                    <input
+                      type="text"
+                      placeholder="태그라인"
+                      value={tagLine}
+                      onChange={(e) => setTagLine(e.target.value)}
+                      required
+                      className="summoner-input"
+                    />
+                  </div>
+                  <div className="form-buttons">
+                    <button type="submit" className="submit-btn">추가</button>
+                    <button type="button" className="cancel-btn" onClick={handleCancelAdd}>취소</button>
+                  </div>
+                </form>
+              )}
             </div>
           )}
         </div>
