@@ -10,12 +10,60 @@ export default function TeamPage() {
   const [summonerName, setSummonerName] = useState("");
   const [tagLine, setTagLine] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [teamMode, setTeamMode] = useState("황금 밸런스");
+  const [team1, setTeam1] = useState([]);
+  const [team2, setTeam2] = useState([]);
+  const [unassigned, setUnassigned] = useState([]);
+  const [draggedSummoner, setDraggedSummoner] = useState(null);
 
   const handleSessionExpired = () => {
     setSessionExpired(true);
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
     window.dispatchEvent(new Event('storage'));
+  };
+
+  const handleDragStart = (e, summoner) => {
+    setDraggedSummoner(summoner);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetTeam) => {
+    e.preventDefault();
+    if (!draggedSummoner) return;
+
+    // 기존 위치에서 제거
+    setTeam1(prev => prev.filter(s => s.no !== draggedSummoner.no));
+    setTeam2(prev => prev.filter(s => s.no !== draggedSummoner.no));
+    setUnassigned(prev => prev.filter(s => s.no !== draggedSummoner.no));
+    setSummoners(prev => prev.filter(s => s.no !== draggedSummoner.no));
+
+    // 새 위치에 추가
+    switch (targetTeam) {
+      case 'team1':
+        setTeam1(prev => [...prev, draggedSummoner]);
+        break;
+      case 'team2':
+        setTeam2(prev => [...prev, draggedSummoner]);
+        break;
+      case 'unassigned':
+        setUnassigned(prev => [...prev, draggedSummoner]);
+        break;
+      case 'summoner-list':
+        setSummoners(prev => [...prev, draggedSummoner]);
+        break;
+    }
+    setDraggedSummoner(null);
+  };
+
+  const handleGenerateResult = () => {
+    // TODO: 팀 밸런싱 로직 구현
+    console.log("결과 생성:", { teamMode, team1, team2, unassigned });
   };
 
   const getLatestIconImgVersion = async () => {
@@ -120,17 +168,33 @@ export default function TeamPage() {
             if (res.ok) {
               const data = await res.json();
               setSummoners(data.data.content);
+              // 초기에는 모든 팀 구역을 비워둠
+              setTeam1([]);
+              setTeam2([]);
+              setUnassigned([]);
             } else {
               // API 실패 시 임시 데이터 사용
-              setSummoners(getTempData());
+              const tempData = getTempData();
+              setSummoners(tempData);
+              setTeam1([]);
+              setTeam2([]);
+              setUnassigned([]);
             }
           } catch (error) {
             // 에러 시 임시 데이터 사용
-            setSummoners(getTempData());
+            const tempData = getTempData();
+            setSummoners(tempData);
+            setTeam1([]);
+            setTeam2([]);
+            setUnassigned([]);
           }
         } else {
           // 로그인 안된 경우 임시 데이터 사용
-          setSummoners(getTempData());
+          const tempData = getTempData();
+          setSummoners(tempData);
+          setTeam1([]);
+          setTeam2([]);
+          setUnassigned([]);
         }
         setLoading(false);
       };
@@ -323,6 +387,45 @@ export default function TeamPage() {
     return `${tier} ${rankText}`;
   };
 
+  const renderTeamZone = (team, teamName, teamKey) => (
+    <div 
+      className={`team-zone ${teamKey}`}
+      onDragOver={handleDragOver}
+      onDrop={(e) => handleDrop(e, teamKey)}
+    >
+      <h3 className="team-title">{teamName}</h3>
+      <div className="team-members">
+        {team.map((summoner) => (
+          <div 
+            key={summoner.no} 
+            className="team-member"
+            draggable
+            onDragStart={(e) => handleDragStart(e, summoner)}
+          >
+            <div className="member-profile">
+              <Image 
+                src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
+                alt="프로필 아이콘"
+                width={32}
+                height={32}
+              />
+              <span className="member-level">{summoner.summonerLevel}</span>
+            </div>
+            <div className="member-info">
+              <div className="member-name">{summoner.summonerName}#{summoner.tagLine}</div>
+              <div 
+                className="member-tier"
+                style={{ color: getTierColor(summoner.tier) }}
+              >
+                {getTierText(summoner.tier, summoner.rank)}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="team-page container">
@@ -349,26 +452,54 @@ export default function TeamPage() {
       )}
       <div className="team-layout">
         <div className="team-left">
-          <h2>팀 배치</h2>
-          <p>팀 배치 영역 (구현 예정)</p>
+          <div className="team-header">
+            <h2>팀 배치</h2>
+            <select 
+              value={teamMode} 
+              onChange={(e) => setTeamMode(e.target.value)}
+              className="team-mode-select"
+            >
+              <option value="황금 밸런스">황금 밸런스</option>
+              <option value="Random">Random</option>
+            </select>
+          </div>
+          <div className="team-zones">
+            {renderTeamZone(team1, "1팀", "team1")}
+            {renderTeamZone(team2, "2팀", "team2")}
+            {renderTeamZone(unassigned, "팀미지정", "unassigned")}
+          </div>
+          <div className="team-actions">
+            <button className="generate-result-btn" onClick={handleGenerateResult}>
+              결과 생성
+            </button>
+          </div>
         </div>
         <div className="team-right">
           <h2>소환사 목록</h2>
-          <div className="summoner-list">
+          <div 
+            className="summoner-list"
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, 'summoner-list')}
+          >
             {summoners.map((summoner) => (
-              <div key={summoner.no} className="summoner-card">
+              <div 
+                key={summoner.no} 
+                className="summoner-card"
+                draggable
+                onDragStart={(e) => handleDragStart(e, summoner)}
+              >
                 <div className="summoner-profile">
                   <div className="profile-icon">
                     <Image 
                       src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
                       alt="프로필 아이콘"
-                      width={44}
-                      height={44}
+                      width={40}
+                      height={40}
                     />
                     <span className="level">{summoner.summonerLevel}</span>
                   </div>
                   <div className="summoner-info">
-                    <div className="summoner-name">
+                    <div className={`summoner-name ${summoner.summonerName.length > 11 ? 'long' : ''}`}>
                       {summoner.summonerName}#{summoner.tagLine}
                     </div>
                     <div 

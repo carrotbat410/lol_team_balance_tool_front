@@ -321,7 +321,7 @@ button, input, select, textarea {
 }
 .team-layout {
   display: grid;
-  grid-template-columns: 1fr 500px;
+  grid-template-columns: 1fr 350px;
   gap: 32px;
   min-height: 600px;
   max-width: 1400px;
@@ -343,6 +343,8 @@ button, input, select, textarea {
   flex-direction: column;
   justify-self: end;
   margin-right: -24px;
+  width: 350px;
+  flex-shrink: 0;
 }
 .team-left h2, .team-right h2 {
   font-size: 1.5em;
@@ -354,9 +356,17 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 480px;
+  height: 280px;
   overflow-y: auto;
   flex: 1;
+  padding: 3px;
+  border-radius: 6px;
+  transition: background 0.15s;
+  min-height: 280px;
+  width: 100%;
+}
+.summoner-list:hover {
+  background: rgba(68, 68, 74, 0.1);
 }
 .add-summoner-section {
   margin-top: 16px;
@@ -389,9 +399,17 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  cursor: grab;
+  min-height: 60px;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 .summoner-card:hover {
   border-color: #44444a;
+}
+.summoner-card:active {
+  cursor: grabbing;
 }
 .summoner-profile {
   display: flex;
@@ -454,6 +472,8 @@ button, input, select, textarea {
 .summoner-info {
   flex: 1;
   min-width: 0;
+  max-width: 200px;
+  width: 100%;
 }
 .summoner-name {
   font-weight: 600;
@@ -463,6 +483,8 @@ button, input, select, textarea {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  width: 100%;
 }
 .summoner-tier {
   font-weight: 600;
@@ -477,20 +499,20 @@ button, input, select, textarea {
 .add-summoner-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 .form-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 .summoner-input {
   flex: 1;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: 4px;
   border: 1px solid #31313c;
   background: #18181c;
   color: #f5f6fa;
-  font-size: 0.9em;
+  font-size: 0.85em;
 }
 .summoner-input:focus {
   outline: none;
@@ -501,16 +523,16 @@ button, input, select, textarea {
 }
 .form-buttons {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 .submit-btn {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: #44444a;
   color: #fff;
   font-weight: 600;
   border-radius: 4px;
-  font-size: 0.9em;
+  font-size: 0.85em;
   border: none;
   cursor: pointer;
   transition: background 0.15s;
@@ -520,12 +542,12 @@ button, input, select, textarea {
 }
 .cancel-btn {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: #18181c;
   color: #a4b0be;
   font-weight: 600;
   border-radius: 4px;
-  font-size: 0.9em;
+  font-size: 0.85em;
   border: 1px solid #31313c;
   cursor: pointer;
   transition: background 0.15s;
@@ -543,4 +565,138 @@ button, input, select, textarea {
   font-weight: 600;
   margin-bottom: 16px;
   box-shadow: 0 2px 8px 0 rgba(255,77,79,0.2);
+}
+
+/* 팀 배치 영역 스타일 */
+.team-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.team-mode-select {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #31313c;
+  background: #18181c;
+  color: #f5f6fa;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+.team-zones {
+  display: grid;
+  grid-template-areas: 
+    "team1 team2"
+    "unassigned unassigned";
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.team-zone {
+  background: #18181c;
+  border: 2px dashed #31313c;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 100px;
+  height: 120px;
+  transition: border-color 0.15s;
+  overflow-y: auto;
+}
+.team-zone:hover {
+  border-color: #44444a;
+}
+.team-zone.team1 {
+  grid-area: team1;
+  border-color: #3b82f6;
+}
+.team-zone.team2 {
+  grid-area: team2;
+  border-color: #ef4444;
+}
+.team-zone.unassigned {
+  grid-area: unassigned;
+  border-color: #6b7280;
+}
+.team-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #f5f6fa;
+}
+.team-members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.team-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: #23232b;
+  border-radius: 6px;
+  cursor: grab;
+  transition: background 0.15s;
+}
+.team-member:hover {
+  background: #2a2a35;
+}
+.team-member:active {
+  cursor: grabbing;
+}
+.member-profile {
+  position: relative;
+  flex-shrink: 0;
+}
+.member-profile img {
+  border-radius: 50%;
+}
+.member-level {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: #23232b;
+  color: #f5f6fa;
+  font-size: 0.65em;
+  font-weight: 600;
+  padding: 1px 3px;
+  border-radius: 3px;
+  border: 1px solid #44444a;
+}
+.member-info {
+  flex: 1;
+  min-width: 0;
+  max-width: 150px;
+}
+.member-name {
+  font-weight: 600;
+  color: #f5f6fa;
+  font-size: 0.85em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+  max-width: 100%;
+}
+.member-tier {
+  font-weight: 600;
+  font-size: 0.8em;
+}
+.team-actions {
+  display: flex;
+  justify-content: center;
+}
+.generate-result-btn {
+  background: #44444a;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 1em;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.generate-result-btn:hover {
+  background: #23232b;
 }
