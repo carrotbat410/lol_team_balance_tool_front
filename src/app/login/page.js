@@ -9,6 +9,18 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const handleApiError = (status) => {
+    if (status === 401) {
+      alert("세션이 만료되었습니다. 다시 로그인 후 시도해주세요.");
+      return true;
+    }
+    if (status === 403) {
+      alert("권한이 없어 요청이 거부되었습니다. 문의사항은 오픈 채팅을 통해 문의 부탁드립니다.");
+      return true;
+    }
+    return false;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -22,9 +34,14 @@ export default function LoginPage() {
         method: "POST",
         body: formData,
       });
+      
+      if (handleApiError(res.status)) return;
+      
       if (res.status === 200) {
         const data = await res.json();
+        // token을 cookie에 저장
         document.cookie = `token=${data.token}; path=/;`;
+        // username을 localStorage에 저장
         localStorage.setItem("username", data.username);
         localStorage.setItem("isLoggedIn", "true");
         window.dispatchEvent(new Event("storage"));

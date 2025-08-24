@@ -9,6 +9,18 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const handleApiError = (status) => {
+    if (status === 401) {
+      alert("세션이 만료되었습니다. 다시 로그인 후 시도해주세요.");
+      return true;
+    }
+    if (status === 403) {
+      alert("권한이 없어 요청이 거부되었습니다. 문의사항은 오픈 채팅을 통해 문의 부탁드립니다.");
+      return true;
+    }
+    return false;
+  };
+
   const validateInput = (value) => {
     const regex = /^[a-zA-Z0-9]+$/;
     return regex.test(value) && value.length >= 6;
@@ -44,6 +56,9 @@ export default function SignupPage() {
           password: password
         }),
       });
+      
+      if (handleApiError(res.status)) return;
+      
       if (res.status === 200) {
         router.push("/login");
       } else if (res.status === 409) {

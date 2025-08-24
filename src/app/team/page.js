@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function TeamPage() {
   const [summoners, setSummoners] = useState([]);
@@ -15,12 +16,29 @@ export default function TeamPage() {
   const [team2, setTeam2] = useState([]);
   const [unassigned, setUnassigned] = useState([]);
   const [draggedSummoner, setDraggedSummoner] = useState(null);
+  const router = useRouter();
 
   const handleSessionExpired = () => {
     setSessionExpired(true);
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
     window.dispatchEvent(new Event('storage'));
+    setTimeout(() => {
+      router.push('/login');
+    }, 2000);
+  };
+
+  const handleApiError = (status) => {
+    if (status === 401) {
+      alert("세션이 만료되었습니다. 다시 로그인 후 시도해주세요.");
+      handleSessionExpired();
+      return true;
+    }
+    if (status === 403) {
+      alert("권한이 없어 요청이 거부되었습니다. 문의사항은 오픈 채팅을 통해 문의 부탁드립니다.");
+      return true;
+    }
+    return false;
   };
 
   const handleDragStart = (e, summoner) => {
@@ -66,6 +84,24 @@ export default function TeamPage() {
     console.log("결과 생성:", { teamMode, team1, team2, unassigned });
   };
 
+  const handleReset = () => {
+    // 모든 팀 구역을 비우고 소환사 목록을 원래 상태로 복원
+    setTeam1([]);
+    setTeam2([]);
+    setUnassigned([]);
+    
+    // 소환사 목록을 원래 데이터로 복원
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (isLoggedIn) {
+      // 로그인된 경우 API에서 다시 가져오기
+      fetchSummoners();
+    } else {
+      // 로그인 안된 경우 임시 데이터로 복원
+      const tempData = getTempData();
+      setSummoners(tempData);
+    }
+  };
+
   const getLatestIconImgVersion = async () => {
     try {
       const response = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
@@ -101,10 +137,7 @@ export default function TeamPage() {
         })
       });
       
-      if (res.status === 403) {
-        handleSessionExpired();
-        return;
-      }
+      if (handleApiError(res.status)) return;
       
       if (res.ok) {
         // 성공 시 소환사 목록 새로고침
@@ -114,10 +147,7 @@ export default function TeamPage() {
           }
         });
         
-        if (summonersRes.status === 403) {
-          handleSessionExpired();
-          return;
-        }
+        if (handleApiError(summonersRes.status)) return;
         
         if (summonersRes.ok) {
           const data = await summonersRes.json();
@@ -143,63 +173,51 @@ export default function TeamPage() {
     setShowAddForm(false);
   };
 
+  const fetchSummoners = async () => {
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const res = await fetch('http://localhost:8080/summoners?size=30', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (handleApiError(res.status)) return;
+      
+      if (res.ok) {
+        const data = await res.json();
+        setSummoners(data.data.content);
+      } else {
+        // API 실패 시 임시 데이터 사용
+        const tempData = getTempData();
+        setSummoners(tempData);
+      }
+    } catch (error) {
+      // 에러 시 임시 데이터 사용
+      const tempData = getTempData();
+      setSummoners(tempData);
+    }
+  };
+
   useEffect(() => {
     const initializeData = async () => {
       const version = await getLatestIconImgVersion();
       setIconVersion(version);
       
-      const fetchSummoners = async () => {
+      const loadSummoners = async () => {
         const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
         
         if (isLoggedIn) {
-          try {
-            const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-            const res = await fetch('http://localhost:8080/summoners?size=30', {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            
-            if (res.status === 403) {
-              handleSessionExpired();
-              return;
-            }
-            
-            if (res.ok) {
-              const data = await res.json();
-              setSummoners(data.data.content);
-              // 초기에는 모든 팀 구역을 비워둠
-              setTeam1([]);
-              setTeam2([]);
-              setUnassigned([]);
-            } else {
-              // API 실패 시 임시 데이터 사용
-              const tempData = getTempData();
-              setSummoners(tempData);
-              setTeam1([]);
-              setTeam2([]);
-              setUnassigned([]);
-            }
-          } catch (error) {
-            // 에러 시 임시 데이터 사용
-            const tempData = getTempData();
-            setSummoners(tempData);
-            setTeam1([]);
-            setTeam2([]);
-            setUnassigned([]);
-          }
+          await fetchSummoners();
         } else {
           // 로그인 안된 경우 임시 데이터 사용
           const tempData = getTempData();
           setSummoners(tempData);
-          setTeam1([]);
-          setTeam2([]);
-          setUnassigned([]);
         }
         setLoading(false);
       };
 
-      fetchSummoners();
+      loadSummoners();
     };
 
     initializeData();
@@ -445,11 +463,11 @@ export default function TeamPage() {
 
   return (
     <div className="team-page">
-      {sessionExpired && (
+      {/* {sessionExpired && (
         <div className="session-expired-notice">
           세션이 만료되었습니다. 다시 로그인 후 이용해주세요.
         </div>
-      )}
+      )} */}
       <div className="team-layout">
         <div className="team-left">
           <div className="team-header">
@@ -466,11 +484,14 @@ export default function TeamPage() {
           <div className="team-zones">
             {renderTeamZone(team1, "1팀", "team1")}
             {renderTeamZone(team2, "2팀", "team2")}
-            {renderTeamZone(unassigned, "팀미지정", "unassigned")}
+            {renderTeamZone(unassigned, "팀 미지정", "unassigned")}
           </div>
           <div className="team-actions">
             <button className="generate-result-btn" onClick={handleGenerateResult}>
               결과 생성
+            </button>
+            <button className="reset-btn" onClick={handleReset}>
+              초기화
             </button>
           </div>
         </div>

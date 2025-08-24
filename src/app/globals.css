@@ -686,6 +686,7 @@ button, input, select, textarea {
 .team-actions {
   display: flex;
   justify-content: center;
+  gap: 12px;
 }
 .generate-result-btn {
   background: #44444a;
@@ -700,4 +701,18 @@ button, input, select, textarea {
 }
 .generate-result-btn:hover {
   background: #23232b;
+}
+.reset-btn {
+  background: #6b7280;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 1em;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.reset-btn:hover {
+  background: #4b5563;
 }
