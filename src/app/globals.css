@@ -317,7 +317,7 @@ button, input, select, textarea {
 
 /* 팀짜기 페이지 스타일 */
 .team-page {
-  margin-top: 32px;
+  margin-top: 32px; 
 }
 .team-layout {
   display: grid;
@@ -326,6 +326,7 @@ button, input, select, textarea {
   min-height: 600px;
   max-width: 1400px;
   margin: 0 auto;
+  padding-left: 0;
   padding-right: 0;
 }
 .team-left {
@@ -342,7 +343,7 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   justify-self: end;
-  margin-right: -24px;
+  /* margin-right: -24px; */
   width: 350px;
   flex-shrink: 0;
 }
@@ -356,13 +357,13 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  height: 280px;
+  /* height: 280px; */
   overflow-y: auto;
   flex: 1;
   padding: 3px;
   border-radius: 6px;
   transition: background 0.15s;
-  min-height: 280px;
+  min-height: 450px;
   width: 100%;
 }
 .summoner-list:hover {
@@ -631,7 +632,7 @@ button, input, select, textarea {
 .team-member {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 8px;
   background: #23232b;
   border-radius: 6px;

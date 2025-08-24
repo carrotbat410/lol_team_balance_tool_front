@@ -428,7 +428,7 @@ export default function TeamPage() {
 
   if (loading) {
     return (
-      <div className="team-page container">
+      <div className="team-page">
         <div className="team-layout">
           <div className="team-left">
             <h2>팀 배치</h2>
@@ -444,7 +444,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="team-page container">
+    <div className="team-page">
       {sessionExpired && (
         <div className="session-expired-notice">
           세션이 만료되었습니다. 다시 로그인 후 이용해주세요.
@@ -478,9 +478,10 @@ export default function TeamPage() {
           <h2>소환사 목록</h2>
           <div 
             className="summoner-list"
+            style={{ maxHeight: '450px', overflowY: 'auto' }}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, 'summoner-list')}
-          >
+          > 
             {summoners.map((summoner) => (
               <div 
                 key={summoner.no} 
