@@ -357,14 +357,28 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* height: 280px; */
-  overflow-y: auto;
+  height: 480px;
+  overflow-y: scroll;
   flex: 1;
   padding: 3px;
   border-radius: 6px;
   transition: background 0.15s;
   min-height: 450px;
   width: 100%;
+}
+.summoner-list::-webkit-scrollbar {
+  width: 8px;
+}
+.summoner-list::-webkit-scrollbar-track {
+  background: #18181c;
+  border-radius: 4px;
+}
+.summoner-list::-webkit-scrollbar-thumb {
+  background: #44444a;
+  border-radius: 4px;
+}
+.summoner-list::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
 .summoner-list:hover {
   background: rgba(68, 68, 74, 0.1);
@@ -689,7 +703,7 @@ button, input, select, textarea {
   gap: 12px;
 }
 .generate-result-btn {
-  background: #44444a;
+  background: #6b7280;
   color: #fff;
   font-weight: 600;
   padding: 12px 24px;
@@ -700,7 +714,7 @@ button, input, select, textarea {
   transition: background 0.15s;
 }
 .generate-result-btn:hover {
-  background: #23232b;
+  background: #4b5563;
 }
 .reset-btn {
   background: #6b7280;
