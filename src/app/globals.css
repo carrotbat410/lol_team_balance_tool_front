@@ -613,9 +613,9 @@ button, input, select, textarea {
   border-radius: 8px;
   padding: 12px;
   min-height: 100px;
-  height: 120px;
+  height: 450px;
   transition: border-color 0.15s;
-  overflow-y: auto;
+  overflow-y: visible;
 }
 .team-zone:hover {
   border-color: #44444a;
@@ -631,6 +631,7 @@ button, input, select, textarea {
 .team-zone.unassigned {
   grid-area: unassigned;
   border-color: #6b7280;
+  height: 200px;
 }
 .team-title {
   font-size: 1.1em;
@@ -642,6 +643,34 @@ button, input, select, textarea {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  height: 100%;
+}
+.team-zone.unassigned .team-members {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  height: auto;
+}
+.team-zone.unassigned .team-member {
+  padding: 6px;
+  min-height: 50px;
+}
+.team-zone.unassigned .member-profile img {
+  width: 24px;
+  height: 24px;
+}
+.team-zone.unassigned .member-level {
+  font-size: 0.6em;
+  padding: 1px 2px;
+  bottom: -1px;
+  right: -1px;
+}
+.team-zone.unassigned .member-name {
+  font-size: 0.7em;
+  margin-bottom: 1px;
+}
+.team-zone.unassigned .member-tier {
+  font-size: 0.65em;
 }
 .team-member {
   display: flex;
@@ -729,4 +758,23 @@ button, input, select, textarea {
 }
 .reset-btn:hover {
   background: #4b5563;
+}
+
+/* 반응형 대응 */
+@media (min-width: 1024px) and (max-width: 1920px) {
+  .team-zone {
+    height: 430px;
+  }
+  .team-zone.unassigned {
+    height: 180px;
+  }
+}
+
+@media (min-width: 1921px) {
+  .team-zone {
+    height: 530px;
+  }
+  .team-zone.unassigned {
+    height: 220px;
+  }
 }
