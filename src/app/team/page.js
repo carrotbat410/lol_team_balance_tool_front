@@ -55,6 +55,35 @@ export default function TeamPage() {
     e.preventDefault();
     if (!draggedSummoner) return;
 
+    const isNewSummoner = !team1.find(s => s.no === draggedSummoner.no) &&
+                          !team2.find(s => s.no === draggedSummoner.no) &&
+                          !unassigned.find(s => s.no === draggedSummoner.no);
+
+    if (isNewSummoner) {
+      const totalInTeams = team1.length + team2.length + unassigned.length;
+      if (totalInTeams >= 10) {
+        alert('배치된 총 인원이 10명을 초과할 수 없습니다.');
+        setDraggedSummoner(null);
+        return;
+      }
+    }
+
+    // 드롭 대상 팀 인원 제한 체크 (팀1/팀2는 최대 5명)
+    if (targetTeam === 'team1' && team1.find(s => s.no === draggedSummoner.no) == null) {
+      if (team1.length >= 5) {
+        alert('1팀에는 최대 5명까지 배치할 수 있습니다.');
+        setDraggedSummoner(null);
+        return;
+      }
+    }
+    if (targetTeam === 'team2' && team2.find(s => s.no === draggedSummoner.no) == null) {
+      if (team2.length >= 5) {
+        alert('2팀에는 최대 5명까지 배치할 수 있습니다.');
+        setDraggedSummoner(null);
+        return;
+      }
+    }
+
     // 기존 위치에서 제거
     setTeam1(prev => prev.filter(s => s.no !== draggedSummoner.no));
     setTeam2(prev => prev.filter(s => s.no !== draggedSummoner.no));
@@ -80,8 +109,22 @@ export default function TeamPage() {
   };
 
   const handleGenerateResult = () => {
-    // TODO: 팀 밸런싱 로직 구현
-    console.log("결과 생성:", { teamMode, team1, team2, unassigned });
+    const totalInZones = team1.length + team2.length + unassigned.length;
+    if (totalInZones !== 10) {
+      alert('총 10명이 1팀/2팀/팀 미지정에 배치되어야 합니다. 현재 인원: ' + totalInZones + '명');
+      return;
+    }
+    if (team1.length > 5) {
+      alert('1팀에는 최대 5명까지 배치할 수 있습니다. 현재: ' + team1.length + '명');
+      return;
+    }
+    if (team2.length > 5) {
+      alert('2팀에는 최대 5명까지 배치할 수 있습니다. 현재: ' + team2.length + '명');
+      return;
+    }
+
+    // TODO: 팀 밸런싱 로직 구현 / 현재는 통과만
+    console.log('결과 생성:', { teamMode, team1, team2, unassigned });
   };
 
   const handleReset = () => {
