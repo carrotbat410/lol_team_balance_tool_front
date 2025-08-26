@@ -226,6 +226,35 @@ export default function TeamPage() {
     setFormMessage({ type: '', text: '' });
   };
 
+  const handleDelete = async (summonerNo) => {
+    if (!confirm('정말로 이 소환사를 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const res = await fetch(`http://localhost:8080/summoner?no=${summonerNo}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (handleApiError(res.status)) return;
+
+      if (res.ok) {
+        setSummoners(prev => prev.filter(s => s.no !== summonerNo));
+        alert('소환사가 삭제되었습니다.');
+      } else {
+        console.error("소환사 삭제 실패:", res.status);
+        alert('소환사 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error("소환사 삭제 중 오류:", error);
+      alert('소환사 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   const fetchSummoners = async () => {
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
@@ -593,7 +622,7 @@ export default function TeamPage() {
                 {localStorage.getItem('isLoggedIn') === 'true' && (
                   <div className="summoner-actions">
                     <button className="action-btn refresh-btn" title="갱신">🔄</button>
-                    <button className="action-btn delete-btn" title="삭제">✕</button>
+                    <button className="action-btn delete-btn" title="삭제" onClick={() => handleDelete(summoner.no)}>✕</button>
                   </div>
                 )}
               </div>
