@@ -549,7 +549,7 @@ export default function TeamPage() {
           </div>
         </div>
         <div className="team-right">
-          <h2>소환사 목록</h2>
+          <h2>소환사 목록 ({summoners.length}/30)</h2>
           <div 
             className="summoner-list"
             style={{ maxHeight: '450px', overflowY: 'auto' }}
