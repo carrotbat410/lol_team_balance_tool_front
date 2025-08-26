@@ -63,7 +63,7 @@ export default function TeamPage() {
     if (isNewSummoner) {
       const totalInTeams = team1.length + team2.length + unassigned.length;
       if (totalInTeams >= 10) {
-        alert('총 10명까지 추가할 수 있습니다.');
+        alert('10명을 초과하여 배치할 수는 없습니다.');
         setDraggedSummoner(null);
         return;
       }
@@ -524,7 +524,7 @@ export default function TeamPage() {
       <div className="team-layout">
         <div className="team-left">
           <div className="team-header">
-            <h2>팀 배치</h2>
+            <h2>팀 배치 ({team1.length + team2.length + unassigned.length}/10)</h2>
             <select 
               value={teamMode} 
               onChange={(e) => setTeamMode(e.target.value)}
@@ -601,7 +601,7 @@ export default function TeamPage() {
           </div>
           {!localStorage.getItem('isLoggedIn') ? (
             <div className="login-notice">
-              로그인 후, 나만의 소환사를 추가하고 팀을짜보세요!
+              로그인 후, 친구들의 소환사계정을 추가하고 팀을 짜보세요!
             </div>
           ) : (
             <div className="add-summoner-section">
@@ -623,6 +623,7 @@ export default function TeamPage() {
                         onChange={(e) => setSummonerName(e.target.value)}
                         required
                         className="summoner-input"
+                        placeholder="예) Hide on bush"
                       />
                     </div>
                     <div className="form-group">
@@ -633,6 +634,7 @@ export default function TeamPage() {
                         value={tagLine}
                         onChange={(e) => setTagLine(e.target.value)}
                         className="summoner-input"
+                        placeholder="예) KR1"
                       />
                     </div>
                   </div>
