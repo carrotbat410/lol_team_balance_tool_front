@@ -518,7 +518,8 @@ button, input, select, textarea {
 }
 .form-row {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
 }
 .summoner-input {
   flex: 1;
@@ -777,4 +778,45 @@ button, input, select, textarea {
   .team-zone.unassigned {
     height: 220px;
   }
+}
+
+.form-hint {
+  font-size: 0.7em;
+  color: #a4b0be;
+  text-align: left;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.form-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-label {
+  flex-basis: 70px;
+  flex-shrink: 0;
+  font-size: 0.9em;
+  font-weight: 500;
+  text-align: left;
+}
+
+.form-message {
+  padding: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.form-message.success {
+  background-color: #27ae60;
+  color: white;
+}
+
+.form-message.error {
+  background-color: #c0392b;
+  color: white;
 }

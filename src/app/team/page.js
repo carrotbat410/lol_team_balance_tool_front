@@ -16,6 +16,7 @@ export default function TeamPage() {
   const [team2, setTeam2] = useState([]);
   const [unassigned, setUnassigned] = useState([]);
   const [draggedSummoner, setDraggedSummoner] = useState(null);
+  const [formMessage, setFormMessage] = useState({ type: '', text: '' });
   const router = useRouter();
 
   const handleSessionExpired = () => {
@@ -62,7 +63,7 @@ export default function TeamPage() {
     if (isNewSummoner) {
       const totalInTeams = team1.length + team2.length + unassigned.length;
       if (totalInTeams >= 10) {
-        alert('배치된 총 인원이 10명을 초과할 수 없습니다.');
+        alert('총 10명까지 추가할 수 있습니다.');
         setDraggedSummoner(null);
         return;
       }
@@ -165,7 +166,8 @@ export default function TeamPage() {
 
   const handleSubmitAdd = async (e) => {
     e.preventDefault();
-    
+    setFormMessage({ type: '', text: '' });
+
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const res = await fetch('http://localhost:8080/summoner', {
@@ -176,14 +178,14 @@ export default function TeamPage() {
         },
         body: JSON.stringify({
           summonerName: summonerName,
-          tagLine: tagLine
+          tagLine: tagLine.trim() === '' ? 'KR1' : tagLine
         })
       });
       
       if (handleApiError(res.status)) return;
       
       if (res.ok) {
-        // 성공 시 소환사 목록 새로고침
+        setFormMessage({ type: 'success', text: '유저를 추가했습니다.' });
         const summonersRes = await fetch('http://localhost:8080/summoners?size=30', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -199,21 +201,29 @@ export default function TeamPage() {
         
         setSummonerName("");
         setTagLine("");
-        setShowAddForm(false);
       } else {
-        console.error("소환사 추가 실패:", res.status);
-        // TODO: 에러 메시지 표시
+        if (res.status === 404) {
+          setFormMessage({ type: 'error', text: '존재하지 않는 유저입니다.' });
+        } else {
+          console.error("소환사 추가 실패:", res.status);
+          setFormMessage({ type: 'error', text: '소환사 추가에 실패했습니다. 잠시 후 다시 시도해주세요.' });
+        }
       }
     } catch (error) {
       console.error("소환사 추가 중 오류:", error);
-      // TODO: 에러 메시지 표시
+      setFormMessage({ type: 'error', text: '소환사 추가 중 오류가 발생했습니다.' });
     }
+
+    setTimeout(() => {
+      setFormMessage({ type: '', text: '' });
+    }, 3000);
   };
 
   const handleCancelAdd = () => {
     setSummonerName("");
     setTagLine("");
     setShowAddForm(false);
+    setFormMessage({ type: '', text: '' });
   };
 
   const fetchSummoners = async () => {
@@ -599,24 +609,40 @@ export default function TeamPage() {
                 <button className="add-summoner-btn" onClick={handleAddSummoner}>소환사 추가</button>
               ) : (
                 <form className="add-summoner-form" onSubmit={handleSubmitAdd}>
+                  <p className="form-hint">
+                    추가할 유저의 닉네임과 태그라인을 입력해주세요.<br />
+                    (태그라인 생략시 태그라인은 KR1으로 검색됩니다.)
+                  </p>
                   <div className="form-row">
-                    <input
-                      type="text"
-                      placeholder="소환사명"
-                      value={summonerName}
-                      onChange={(e) => setSummonerName(e.target.value)}
-                      required
-                      className="summoner-input"
-                    />
-                    <input
-                      type="text"
-                      placeholder="태그라인"
-                      value={tagLine}
-                      onChange={(e) => setTagLine(e.target.value)}
-                      required
-                      className="summoner-input"
-                    />
+                    <div className="form-group">
+                      <label htmlFor="summonerName" className="form-label">소환사명</label>
+                      <input
+                        id="summonerName"
+                        type="text"
+                        value={summonerName}
+                        onChange={(e) => setSummonerName(e.target.value)}
+                        required
+                        className="summoner-input"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="tagLine" className="form-label">태그라인</label>
+                      <input
+                        id="tagLine"
+                        type="text"
+                        value={tagLine}
+                        onChange={(e) => setTagLine(e.target.value)}
+                        className="summoner-input"
+                      />
+                    </div>
                   </div>
+                  
+                  {formMessage.text && (
+                    <div className={`form-message ${formMessage.type}`}>
+                      {formMessage.text}
+                    </div>
+                  )}
+
                   <div className="form-buttons">
                     <button type="submit" className="submit-btn">추가</button>
                     <button type="button" className="cancel-btn" onClick={handleCancelAdd}>취소</button>
