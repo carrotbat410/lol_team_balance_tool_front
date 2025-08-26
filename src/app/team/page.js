@@ -112,7 +112,7 @@ export default function TeamPage() {
   const handleGenerateResult = () => {
     const totalInZones = team1.length + team2.length + unassigned.length;
     if (totalInZones !== 10) {
-      alert('총 10명이 1팀/2팀/팀 미지정에 배치되어야 합니다. 현재 인원: ' + totalInZones + '명');
+      alert('총 10명이 1팀/2팀/팀 미지정에 배치되어야 합니다. 현재 배치된 인원: ' + totalInZones + '명');
       return;
     }
     if (team1.length > 5) {
