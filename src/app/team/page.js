@@ -502,11 +502,11 @@ export default function TeamPage() {
       <div className="team-page">
         <div className="team-layout">
           <div className="team-left">
-            <h2>팀 배치</h2>
+            <h2>팀 배치 ({team1.length + team2.length + unassigned.length}/10)</h2>
             <p>로딩 중...</p>
           </div>
           <div className="team-right">
-            <h2>소환사 목록</h2>
+            <h2>소환사 목록 ({summoners.length}/30)</h2>
             <p>로딩 중...</p>
           </div>
         </div>
