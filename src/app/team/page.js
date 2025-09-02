@@ -255,6 +255,44 @@ export default function TeamPage() {
     }
   };
 
+  const handleRefresh = async (summonerName, tagLine) => {
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const res = await fetch('http://localhost:8080/summoner', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          summonerName: summonerName,
+          tagLine: tagLine
+        })
+      });
+
+      if (handleApiError(res.status)) return;
+
+      if (res.ok) {
+        const result = await res.json();
+        const updatedSummoner = result.data;
+        
+        setSummoners(prev => prev.map(s => 
+          s.summonerName === updatedSummoner.summonerName && s.tagLine === updatedSummoner.tagLine 
+          ? { ...s, ...updatedSummoner } 
+          : s
+        ));
+
+        alert('소환사 정보가 갱신되었습니다.');
+      } else {
+        console.error("소환사 갱신 실패:", res.status);
+        alert('소환사 정보 갱신에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error("소환사 갱신 중 오류:", error);
+      alert('소환사 정보 갱신 중 오류가 발생했습니다.');
+    }
+  };
+
   const fetchSummoners = async () => {
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
@@ -621,7 +659,7 @@ export default function TeamPage() {
                 </div>
                 {localStorage.getItem('isLoggedIn') === 'true' && (
                   <div className="summoner-actions">
-                    <button className="action-btn refresh-btn" title="갱신">🔄</button>
+                    <button className="action-btn refresh-btn" title="갱신" onClick={() => handleRefresh(summoner.summonerName, summoner.tagLine)}>🔄</button>
                     <button className="action-btn delete-btn" title="삭제" onClick={() => handleDelete(summoner.no)}>✕</button>
                   </div>
                 )}
