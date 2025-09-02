@@ -191,6 +191,25 @@ button, input, select, textarea {
   background: #23232b;
 }
 
+.contact-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #44444a;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 30px;
+  transition: background 0.15s;
+  font-size: 1em;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.2);
+  z-index: 1000;
+}
+
+.contact-btn:hover {
+  background: #23232b;
+}
+
 /* 로그인 페이지 스타일 */
 .login-page {
   max-width: 400px;

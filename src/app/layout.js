@@ -47,6 +47,7 @@ export default function RootLayout({ children }) {
           </div>
         </nav>
         <main className="container">{children}</main>
+        <Link href="https://open.kakao.com/o/suvzT5Wf" target="_blank" className="contact-btn">문의하기</Link>
       </body>
     </html>
   );
