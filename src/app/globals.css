@@ -940,7 +940,8 @@ button, input, select, textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 0;
+  height: 60px;
+  padding: 0 10px;
   border-bottom: 1px solid #31313c;
 }
 
@@ -959,7 +960,7 @@ button, input, select, textarea {
 .change-password-btn {
   background: #44444a;
   color: #fff;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border-radius: 6px;
   cursor: pointer;
 }
