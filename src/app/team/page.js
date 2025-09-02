@@ -682,7 +682,12 @@ export default function TeamPage() {
                 </div>
                 {localStorage.getItem('isLoggedIn') === 'true' && (
                   <div className="summoner-actions">
-                    <button className="action-btn refresh-btn" title="갱신" onClick={() => debouncedHandleRefresh(summoner.summonerName, summoner.tagLine, summoner.no)}>🔄</button>
+                    <button 
+                      className="action-btn refresh-btn" 
+                      title={summoner.updatable ? "갱신" : "갱신한지 24시간이 지나지 않은 소환사입니다."}
+                      onClick={() => summoner.updatable && debouncedHandleRefresh(summoner.summonerName, summoner.tagLine, summoner.no)}
+                      disabled={!summoner.updatable}
+                    >🔄</button>
                     <button className="action-btn delete-btn" title="삭제" onClick={() => handleDelete(summoner.no)}>✕</button>
                   </div>
                 )}
