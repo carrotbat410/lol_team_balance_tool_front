@@ -3,6 +3,7 @@ import "./globals.css";
 import Link from 'next/link';
 import Image from 'next/image';
 import NavbarRight from './components/NavbarRight';
+import LogoLink from './components/LogoLink';
 import { Noto_Sans_KR } from 'next/font/google';
 
 const notoSansKR = Noto_Sans_KR({
@@ -31,9 +32,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body className={notoSansKR.className}>
         <div className="logo-wrap container">
-          <Link href="/" className="logo">
-            <Image src="/logo.webp" alt="로고" width={120} height={20} />
-          </Link>
+          <LogoLink />
         </div>
         <nav className="navbar container">
           <div className="navbar-inner">
