@@ -10,6 +10,15 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/',
+        destination: '/team-balancer',
+        permanent: true,
+      },
+    ]
+  },
 };
 
 export default nextConfig;
