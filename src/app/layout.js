@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
           <div className="navbar-inner">
             <ul className="nav-menu">
               <li><Link href="/community">커뮤니티</Link></li>
-              <li><Link href="/team">팀짜기</Link></li>
+              <li><Link href="/team-balancer">팀짜기</Link></li>
             </ul>
             <div className="nav-right">
               <NavbarRight />
