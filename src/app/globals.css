@@ -867,3 +867,53 @@ button, input, select, textarea {
   font-size: 1.2em;
   font-weight: bold;
 }
+
+.not-found-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+}
+
+.not-found-page h1 {
+  font-size: 6em;
+  font-weight: bold;
+  color: #44444a;
+}
+
+.not-found-page p {
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
+
+.not-found-page a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 1.2em;
+}
+
+.not-found-page a:hover {
+  text-decoration: underline;
+}
+
+.under-development-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+}
+
+.under-development-page h1 {
+  font-size: 3em;
+  font-weight: bold;
+  color: #44444a;
+}
+
+.under-development-page p {
+  font-size: 1.5em;
+  margin-top: 20px;
+}
