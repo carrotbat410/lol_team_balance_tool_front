@@ -23,7 +23,7 @@ export default function TeamPage() {
   const [summonerName, setSummonerName] = useState("");
   const [tagLine, setTagLine] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
-  const [teamMode, setTeamMode] = useState("황금 밸런스");
+  const [teamMode, setTeamMode] = useState("goldenBalance");
   const [team1, setTeam1] = useState([]);
   const [team2, setTeam2] = useState([]);
   const [unassigned, setUnassigned] = useState([]);
@@ -610,14 +610,17 @@ export default function TeamPage() {
         <div className="team-left">
           <div className="team-header">
             <h2>팀 배치 ({team1.length + team2.length + unassigned.length}/10)</h2>
-            <select 
-              value={teamMode} 
-              onChange={(e) => setTeamMode(e.target.value)}
-              className="team-mode-select"
-            >
-              <option value="황금 밸런스">황금 밸런스</option>
-              <option value="Random">Random</option>
-            </select>
+            <div className="team-mode-selector">
+              <span>팀 섞기 모드</span>
+              <select 
+                value={teamMode} 
+                onChange={(e) => setTeamMode(e.target.value)}
+                className="team-mode-select"
+              >
+                <option value="goldenBalance">황금 밸런스</option>
+                <option value="random">무작위</option>
+              </select>
+            </div>
           </div>
           <div className="team-zones">
             {renderTeamZone(team1, "1팀", "team1")}
