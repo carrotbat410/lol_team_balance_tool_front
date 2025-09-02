@@ -406,6 +406,7 @@ button, input, select, textarea {
   background: #23232b;
 }
 .summoner-card {
+  position: relative;
   background: #18181c;
   border-radius: 7px;
   padding: 10px;
@@ -820,4 +821,24 @@ button, input, select, textarea {
 .form-message.error {
   background-color: #c0392b;
   color: white;
+}
+
+.refresh-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  border-radius: 7px;
+}
+
+.refresh-overlay-text {
+  color: white;
+  font-size: 1.2em;
+  font-weight: bold;
 }

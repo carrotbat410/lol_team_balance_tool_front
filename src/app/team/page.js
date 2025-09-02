@@ -1,7 +1,19 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+};
 
 export default function TeamPage() {
   const [summoners, setSummoners] = useState([]);
@@ -17,6 +29,7 @@ export default function TeamPage() {
   const [unassigned, setUnassigned] = useState([]);
   const [draggedSummoner, setDraggedSummoner] = useState(null);
   const [formMessage, setFormMessage] = useState({ type: '', text: '' });
+  const [refreshingSummoner, setRefreshingSummoner] = useState(null);
   const router = useRouter();
 
   const handleSessionExpired = () => {
@@ -255,7 +268,8 @@ export default function TeamPage() {
     }
   };
 
-  const handleRefresh = async (summonerName, tagLine) => {
+  const handleRefresh = useCallback(async (summonerName, tagLine, summonerNo) => {
+    setRefreshingSummoner(summonerNo);
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const res = await fetch('http://localhost:8080/summoner', {
@@ -290,8 +304,12 @@ export default function TeamPage() {
     } catch (error) {
       console.error("소환사 갱신 중 오류:", error);
       alert('소환사 정보 갱신 중 오류가 발생했습니다.');
+    } finally {
+      setRefreshingSummoner(null);
     }
-  };
+  }, []);
+
+  const debouncedHandleRefresh = useCallback(debounce(handleRefresh, 300), [handleRefresh]);
 
   const fetchSummoners = async () => {
     try {
@@ -630,6 +648,11 @@ export default function TeamPage() {
                 draggable
                 onDragStart={(e) => handleDragStart(e, summoner)}
               >
+                {refreshingSummoner === summoner.no && (
+                  <div className="refresh-overlay">
+                    <div className="refresh-overlay-text">갱신중...</div>
+                  </div>
+                )}
                 <div className="summoner-profile">
                   <div className="profile-icon">
                     <Image 
@@ -659,7 +682,7 @@ export default function TeamPage() {
                 </div>
                 {localStorage.getItem('isLoggedIn') === 'true' && (
                   <div className="summoner-actions">
-                    <button className="action-btn refresh-btn" title="갱신" onClick={() => handleRefresh(summoner.summonerName, summoner.tagLine)}>🔄</button>
+                    <button className="action-btn refresh-btn" title="갱신" onClick={() => debouncedHandleRefresh(summoner.summonerName, summoner.tagLine, summoner.no)}>🔄</button>
                     <button className="action-btn delete-btn" title="삭제" onClick={() => handleDelete(summoner.no)}>✕</button>
                   </div>
                 )}
