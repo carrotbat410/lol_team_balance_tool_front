@@ -29,7 +29,7 @@ export default function NavbarRight() {
   if (isLoggedIn) {
     return (
       <>
-        <Link href="/myAccountInfo" className="user-icon-btn">
+        <Link href="/my-account" className="user-icon-btn">
           <Image src="/user-icon.png" alt="유저 아이콘" width={36} height={36} />
         </Link>
         <button className="logout-btn" onClick={handleLogout}>로그아웃</button>

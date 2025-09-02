@@ -917,3 +917,58 @@ button, input, select, textarea {
   font-size: 1.5em;
   margin-top: 20px;
 }
+
+.my-account-page {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.my-account-page h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+
+.account-info-card {
+  background: #23232b;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #31313c;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: 500;
+}
+
+.info-value {
+  color: #a4b0be;
+}
+
+.change-password-btn {
+  background: #44444a;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.account-actions {
+  text-align: right;
+}
+
+.delete-account-btn {
+  color: #ff4d4f;
+  cursor: pointer;
+}
