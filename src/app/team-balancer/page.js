@@ -617,6 +617,8 @@ export default function TeamPage() {
                 onChange={(e) => setTeamMode(e.target.value)}
                 className="team-mode-select"
               >
+                {/* //TODO 나중에 라인고려도 만들기 */}
+                {/* <option value="lineBalance">황금 밸런스(라인고려)</option> */}
                 <option value="goldenBalance">황금 밸런스</option>
                 <option value="random">무작위</option>
               </select>
