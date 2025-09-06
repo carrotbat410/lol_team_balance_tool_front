@@ -654,6 +654,125 @@ export default function TeamPage() {
     </div>
   );
 
+  const renderSummonerPanel = () => (
+    <div className="team-right">
+      <h2>소환사 목록 ({summoners.length}/30)</h2>
+      <div 
+        className="summoner-list"
+        style={{ maxHeight: '450px', overflowY: 'auto' }}
+        onDragOver={handleDragOver}
+        onDrop={(e) => handleDrop(e, 'summoner-list')}
+      > 
+        {summoners.map((summoner) => (
+          <div 
+            key={summoner.no} 
+            className="summoner-card"
+            draggable
+            onDragStart={(e) => handleDragStart(e, summoner)}
+          >
+            {refreshingSummoner === summoner.no && (
+              <div className="refresh-overlay">
+                <div className="refresh-overlay-text">갱신중...</div>
+              </div>
+            )}
+            <div className="summoner-profile">
+              <div className="profile-icon">
+                <Image 
+                  src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
+                  alt="프로필 아이콘"
+                  width={40}
+                  height={40}
+                />
+                <span className="level">{summoner.summonerLevel}</span>
+              </div>
+              <div className="summoner-info">
+                <div className={`summoner-name ${summoner.summonerName.length > 11 ? 'long' : ''}`}>
+                  {summoner.summonerName}#{summoner.tagLine}
+                </div>
+                <div 
+                  className="summoner-tier"
+                  style={{ color: getTierColor(summoner.tier) }}
+                >
+                  {getTierText(summoner.tier, summoner.rank)}
+                </div>
+                <div className="summoner-stats">
+                  승률: {summoner.wins + summoner.losses > 0 
+                    ? Math.round((summoner.wins / (summoner.wins + summoner.losses)) * 100)
+                    : 0}% ({summoner.wins}승 {summoner.losses}패)
+                </div>
+              </div>
+            </div>
+            {localStorage.getItem('isLoggedIn') === 'true' && (
+              <div className="summoner-actions">
+                <button 
+                  className="action-btn refresh-btn" 
+                  title={summoner.updatable ? "갱신" : "갱신한지 24시간이 지나지 않은 소환사입니다."}
+                  onClick={() => summoner.updatable && debouncedHandleRefresh(summoner.summonerName, summoner.tagLine, summoner.no)}
+                  disabled={!summoner.updatable}
+                >🔄</button>
+                <button className="action-btn delete-btn" title="삭제" onClick={() => handleDelete(summoner.no)}>✕</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {!localStorage.getItem('isLoggedIn') ? (
+        <div className="login-notice">
+          로그인 후, 친구들의 소환사계정을 추가하고 팀을 짜보세요!
+        </div>
+      ) : (
+        <div className="add-summoner-section">
+          {!showAddForm ? (
+            <button className="add-summoner-btn" onClick={handleAddSummoner}>소환사 추가</button>
+          ) : (
+            <form className="add-summoner-form" onSubmit={handleSubmitAdd}>
+              <p className="form-hint">
+                추가할 유저의 닉네임과 태그라인을 입력해주세요.<br />
+                (태그라인 생략시 태그라인은 KR1으로 검색됩니다.)
+              </p>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="summonerName" className="form-label">소환사명</label>
+                  <input
+                    id="summonerName"
+                    type="text"
+                    value={summonerName}
+                    onChange={(e) => setSummonerName(e.target.value)}
+                    required
+                    className="summoner-input"
+                    placeholder="예) Hide on bush"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="tagLine" className="form-label">태그라인</label>
+                  <input
+                    id="tagLine"
+                    type="text"
+                    value={tagLine}
+                    onChange={(e) => setTagLine(e.target.value)}
+                    className="summoner-input"
+                    placeholder="예) KR1"
+                  />
+                </div>
+              </div>
+              
+              {formMessage.text && (
+                <div className={`form-message ${formMessage.type}`}>
+                  {formMessage.text}
+                </div>
+              )}
+
+              <div className="form-buttons">
+                <button type="submit" className="submit-btn">추가</button>
+                <button type="button" className="cancel-btn" onClick={handleCancelAdd}>취소</button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="team-page">
@@ -683,6 +802,7 @@ export default function TeamPage() {
             <div className="team-zones">
               {renderResultTeamZone(balancedTeams.team1List, `1팀 - 평균 티어: ${balancedTeams.team1AvgTierRank}`, "team1")}
               {renderResultTeamZone(balancedTeams.team2List, `2팀 - 평균 티어: ${balancedTeams.team2AvgTierRank}`, "team2")}
+              {renderResultTeamZone([], '\u00A0', "unassigned")}
             </div>
             <div className="team-actions">
               <button className="reset-btn" onClick={handleBackToPlacement}>
@@ -690,48 +810,7 @@ export default function TeamPage() {
               </button>
             </div>
           </div>
-          <div className="team-right">
-            <h2>소환사 목록 ({summoners.length}/30)</h2>
-            <div 
-              className="summoner-list"
-              style={{ maxHeight: '600px', overflowY: 'auto' }}
-            > 
-              {summoners.map((summoner) => (
-                <div 
-                  key={summoner.no} 
-                  className="summoner-card"
-                >
-                  <div className="summoner-profile">
-                    <div className="profile-icon">
-                      <Image 
-                        src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
-                        alt="프로필 아이콘"
-                        width={40}
-                        height={40}
-                      />
-                      <span className="level">{summoner.summonerLevel}</span>
-                    </div>
-                    <div className="summoner-info">
-                      <div className={`summoner-name ${summoner.summonerName.length > 11 ? 'long' : ''}`}>
-                        {summoner.summonerName}#{summoner.tagLine}
-                      </div>
-                      <div 
-                        className="summoner-tier"
-                        style={{ color: getTierColor(summoner.tier) }}
-                      >
-                        {getTierText(summoner.tier, summoner.rank)}
-                      </div>
-                      <div className="summoner-stats">
-                        승률: {summoner.wins + summoner.losses > 0 
-                          ? Math.round((summoner.wins / (summoner.wins + summoner.losses)) * 100)
-                          : 0}% ({summoner.wins}승 {summoner.losses}패)
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          {renderSummonerPanel()}
         </div>
       </div>
     );
@@ -776,122 +855,7 @@ export default function TeamPage() {
             </button>
           </div>
         </div>
-        <div className="team-right">
-          <h2>소환사 목록 ({summoners.length}/30)</h2>
-          <div 
-            className="summoner-list"
-            style={{ maxHeight: '450px', overflowY: 'auto' }}
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, 'summoner-list')}
-          > 
-            {summoners.map((summoner) => (
-              <div 
-                key={summoner.no} 
-                className="summoner-card"
-                draggable
-                onDragStart={(e) => handleDragStart(e, summoner)}
-              >
-                {refreshingSummoner === summoner.no && (
-                  <div className="refresh-overlay">
-                    <div className="refresh-overlay-text">갱신중...</div>
-                  </div>
-                )}
-                <div className="summoner-profile">
-                  <div className="profile-icon">
-                    <Image 
-                      src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
-                      alt="프로필 아이콘"
-                      width={40}
-                      height={40}
-                    />
-                    <span className="level">{summoner.summonerLevel}</span>
-                  </div>
-                  <div className="summoner-info">
-                    <div className={`summoner-name ${summoner.summonerName.length > 11 ? 'long' : ''}`}>
-                      {summoner.summonerName}#{summoner.tagLine}
-                    </div>
-                    <div 
-                      className="summoner-tier"
-                      style={{ color: getTierColor(summoner.tier) }}
-                    >
-                      {getTierText(summoner.tier, summoner.rank)}
-                    </div>
-                    <div className="summoner-stats">
-                      승률: {summoner.wins + summoner.losses > 0 
-                        ? Math.round((summoner.wins / (summoner.wins + summoner.losses)) * 100)
-                        : 0}% ({summoner.wins}승 {summoner.losses}패)
-                    </div>
-                  </div>
-                </div>
-                {localStorage.getItem('isLoggedIn') === 'true' && (
-                  <div className="summoner-actions">
-                    <button 
-                      className="action-btn refresh-btn" 
-                      title={summoner.updatable ? "갱신" : "갱신한지 24시간이 지나지 않은 소환사입니다."}
-                      onClick={() => summoner.updatable && debouncedHandleRefresh(summoner.summonerName, summoner.tagLine, summoner.no)}
-                      disabled={!summoner.updatable}
-                    >🔄</button>
-                    <button className="action-btn delete-btn" title="삭제" onClick={() => handleDelete(summoner.no)}>✕</button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          {!localStorage.getItem('isLoggedIn') ? (
-            <div className="login-notice">
-              로그인 후, 친구들의 소환사계정을 추가하고 팀을 짜보세요!
-            </div>
-          ) : (
-            <div className="add-summoner-section">
-              {!showAddForm ? (
-                <button className="add-summoner-btn" onClick={handleAddSummoner}>소환사 추가</button>
-              ) : (
-                <form className="add-summoner-form" onSubmit={handleSubmitAdd}>
-                  <p className="form-hint">
-                    추가할 유저의 닉네임과 태그라인을 입력해주세요.<br />
-                    (태그라인 생략시 태그라인은 KR1으로 검색됩니다.)
-                  </p>
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label htmlFor="summonerName" className="form-label">소환사명</label>
-                      <input
-                        id="summonerName"
-                        type="text"
-                        value={summonerName}
-                        onChange={(e) => setSummonerName(e.target.value)}
-                        required
-                        className="summoner-input"
-                        placeholder="예) Hide on bush"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label htmlFor="tagLine" className="form-label">태그라인</label>
-                      <input
-                        id="tagLine"
-                        type="text"
-                        value={tagLine}
-                        onChange={(e) => setTagLine(e.target.value)}
-                        className="summoner-input"
-                        placeholder="예) KR1"
-                      />
-                    </div>
-                  </div>
-                  
-                  {formMessage.text && (
-                    <div className={`form-message ${formMessage.type}`}>
-                      {formMessage.text}
-                    </div>
-                  )}
-
-                  <div className="form-buttons">
-                    <button type="submit" className="submit-btn">추가</button>
-                    <button type="button" className="cancel-btn" onClick={handleCancelAdd}>취소</button>
-                  </div>
-                </form>
-              )}
-            </div>
-          )}
-        </div>
+        {renderSummonerPanel()}
       </div>
     </div>
   );
