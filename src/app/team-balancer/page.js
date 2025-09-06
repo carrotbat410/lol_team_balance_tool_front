@@ -252,11 +252,16 @@ export default function TeamPage() {
         setSummonerName("");
         setTagLine("");
       } else {
+        const errorData = await res.json().catch(() => null);
+        const errorMessage = errorData?.message || '소환사 추가에 실패했습니다. 잠시 후 다시 시도해주세요.';
+
         if (res.status === 404) {
           setFormMessage({ type: 'error', text: '존재하지 않는 유저입니다.' });
+        } else if (res.status === 409 || res.status === 422) {
+          setFormMessage({ type: 'error', text: errorMessage });
         } else {
           console.error("소환사 추가 실패:", res.status);
-          setFormMessage({ type: 'error', text: '소환사 추가에 실패했습니다. 잠시 후 다시 시도해주세요.' });
+          setFormMessage({ type: 'error', text: errorMessage });
         }
       }
     } catch (error) {
