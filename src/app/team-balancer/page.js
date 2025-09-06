@@ -23,7 +23,7 @@ export default function TeamPage() {
   const [summonerName, setSummonerName] = useState("");
   const [tagLine, setTagLine] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
-  const [teamMode, setTeamMode] = useState("goldenBalance");
+  const [teamAssignMode, setTeamAssignMode] = useState("GOLDEN_BALANCE");
   const [team1, setTeam1] = useState([]);
   const [team2, setTeam2] = useState([]);
   const [unassigned, setUnassigned] = useState([]);
@@ -138,7 +138,7 @@ export default function TeamPage() {
     }
 
     // TODO: 팀 밸런싱 로직 구현 / 현재는 통과만
-    console.log('결과 생성:', { teamMode, team1, team2, unassigned });
+    console.log('결과 생성:', { teamAssignMode, team1, team2, unassigned });
   };
 
   const handleReset = () => {
@@ -613,14 +613,14 @@ export default function TeamPage() {
             <div className="team-mode-selector">
               <span>팀 섞기 모드</span>
               <select 
-                value={teamMode} 
-                onChange={(e) => setTeamMode(e.target.value)}
+                value={teamAssignMode} 
+                onChange={(e) => setTeamAssignMode(e.target.value)}
                 className="team-mode-select"
               >
                 {/* //TODO 나중에 라인고려도 만들기 */}
                 {/* <option value="lineBalance">황금 밸런스(라인고려)</option> */}
-                <option value="goldenBalance">황금 밸런스</option>
-                <option value="random">무작위</option>
+                <option value="GOLDEN_BALANCE">황금 밸런스</option>
+                <option value="RANDOM">무작위</option>
               </select>
             </div>
           </div>
