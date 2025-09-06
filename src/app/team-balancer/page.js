@@ -675,10 +675,10 @@ export default function TeamPage() {
     return (
       <div className="team-page">
         <div className="team-layout">
-          <div className="team-left" style={{width: '100%'}}>
+          <div className="team-left">
             <div className="team-header" style={{textAlign: 'center', marginBottom: '20px'}}>
               <h2>팀 결과</h2>
-              <p style={{fontSize: '1.2em', color: '#f9ca24'}}>게임 평균 티어: {balancedTeams.gameAvgTierRank}</p>
+              <p style={{fontSize: '1.2em'}}>게임 평균 티어: {balancedTeams.gameAvgTierRank}</p>
             </div>
             <div className="team-zones">
               {renderResultTeamZone(balancedTeams.team1List, `1팀 - 평균 티어: ${balancedTeams.team1AvgTierRank}`, "team1")}
@@ -688,6 +688,48 @@ export default function TeamPage() {
               <button className="reset-btn" onClick={handleBackToPlacement}>
                 다시하기
               </button>
+            </div>
+          </div>
+          <div className="team-right">
+            <h2>소환사 목록 ({summoners.length}/30)</h2>
+            <div 
+              className="summoner-list"
+              style={{ maxHeight: '600px', overflowY: 'auto' }}
+            > 
+              {summoners.map((summoner) => (
+                <div 
+                  key={summoner.no} 
+                  className="summoner-card"
+                >
+                  <div className="summoner-profile">
+                    <div className="profile-icon">
+                      <Image 
+                        src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
+                        alt="프로필 아이콘"
+                        width={40}
+                        height={40}
+                      />
+                      <span className="level">{summoner.summonerLevel}</span>
+                    </div>
+                    <div className="summoner-info">
+                      <div className={`summoner-name ${summoner.summonerName.length > 11 ? 'long' : ''}`}>
+                        {summoner.summonerName}#{summoner.tagLine}
+                      </div>
+                      <div 
+                        className="summoner-tier"
+                        style={{ color: getTierColor(summoner.tier) }}
+                      >
+                        {getTierText(summoner.tier, summoner.rank)}
+                      </div>
+                      <div className="summoner-stats">
+                        승률: {summoner.wins + summoner.losses > 0 
+                          ? Math.round((summoner.wins / (summoner.wins + summoner.losses)) * 100)
+                          : 0}% ({summoner.wins}승 {summoner.losses}패)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
