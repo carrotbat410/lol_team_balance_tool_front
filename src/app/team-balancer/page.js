@@ -30,6 +30,8 @@ export default function TeamPage() {
   const [draggedSummoner, setDraggedSummoner] = useState(null);
   const [formMessage, setFormMessage] = useState({ type: '', text: '' });
   const [refreshingSummoner, setRefreshingSummoner] = useState(null);
+  const [showResultView, setShowResultView] = useState(false);
+  const [balancedTeams, setBalancedTeams] = useState(null);
   const router = useRouter();
 
   const handleSessionExpired = () => {
@@ -122,7 +124,7 @@ export default function TeamPage() {
     setDraggedSummoner(null);
   };
 
-  const handleGenerateResult = () => {
+  const handleGenerateResult = async () => {
     const totalInZones = team1List.length + team2List.length + noTeamList.length;
     if (totalInZones !== 10) {
       alert('총 10명이 1팀/2팀/팀 미지정에 배치되어야 합니다. 현재 배치된 인원: ' + totalInZones + '명');
@@ -137,8 +139,36 @@ export default function TeamPage() {
       return;
     }
 
-    // TODO: 팀 밸런싱 로직 구현 / 현재는 통과만
-    console.log('결과 생성:', { teamAssignMode, team1List, team2List, noTeamList });
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      const res = await fetch('http://localhost:8080/team/balance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          teamAssignMode,
+          team1List,
+          team2List,
+          noTeamList
+        })
+      });
+
+      if (handleApiError(res.status)) return;
+
+      if (res.ok) {
+        const result = await res.json();
+        setBalancedTeams(result.data);
+        setShowResultView(true);
+      } else {
+        const errorData = await res.json().catch(() => ({ message: 'An unknown error occurred.' }));
+        alert(`팀 생성 실패: ${errorData.message}`);
+      }
+    } catch (error) {
+      console.error("팀 생성 중 오류:", error);
+      alert('팀 생성 중 오류가 발생했습니다.');
+    }
   };
 
   const handleReset = () => {
@@ -146,6 +176,8 @@ export default function TeamPage() {
     setTeam1List([]);
     setTeam2List([]);
     setNoTeamList([]);
+    setShowResultView(false);
+    setBalancedTeams(null);
     
     // 소환사 목록을 원래 데이터로 복원
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -157,6 +189,11 @@ export default function TeamPage() {
       const tempData = getTempData();
       setSummoners(tempData);
     }
+  };
+
+  const handleBackToPlacement = () => {
+    setShowResultView(false);
+    setBalancedTeams(null);
   };
 
   const getLatestIconImgVersion = async () => {
@@ -543,6 +580,41 @@ export default function TeamPage() {
     return `${tier} ${rankText}`;
   };
 
+  const renderResultTeamZone = (team, teamName, teamKey) => (
+    <div 
+      className={`team-zone ${teamKey}`}
+    >
+      <h3 className="team-title">{teamName}</h3>
+      <div className="team-members">
+        {team.map((summoner) => (
+          <div 
+            key={summoner.no} 
+            className="team-member"
+          >
+            <div className="member-profile">
+              <Image 
+                src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
+                alt="프로필 아이콘"
+                width={32}
+                height={32}
+              />
+              <span className="member-level">{summoner.summonerLevel}</span>
+            </div>
+            <div className="member-info">
+              <div className="member-name">{summoner.summonerName}#{summoner.tagLine}</div>
+              <div 
+                className="member-tier"
+                style={{ color: getTierColor(summoner.tier) }}
+              >
+                {getTierText(summoner.tier, summoner.rank)}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const renderTeamZone = (team, teamName, teamKey) => (
     <div 
       className={`team-zone ${teamKey}`}
@@ -593,6 +665,30 @@ export default function TeamPage() {
           <div className="team-right">
             <h2>소환사 목록 ({summoners.length}/30)</h2>
             <p>로딩 중...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showResultView && balancedTeams) {
+    return (
+      <div className="team-page">
+        <div className="team-layout">
+          <div className="team-left" style={{width: '100%'}}>
+            <div className="team-header" style={{textAlign: 'center', marginBottom: '20px'}}>
+              <h2>팀 결과</h2>
+              <p style={{fontSize: '1.2em', color: '#f9ca24'}}>게임 평균 티어: {balancedTeams.gameAvgTierRank}</p>
+            </div>
+            <div className="team-zones">
+              {renderResultTeamZone(balancedTeams.team1List, `1팀 - 평균 티어: ${balancedTeams.team1AvgTierRank}`, "team1")}
+              {renderResultTeamZone(balancedTeams.team2List, `2팀 - 평균 티어: ${balancedTeams.team2AvgTierRank}`, "team2")}
+            </div>
+            <div className="team-actions">
+              <button className="reset-btn" onClick={handleBackToPlacement}>
+                다시하기
+              </button>
+            </div>
           </div>
         </div>
       </div>
