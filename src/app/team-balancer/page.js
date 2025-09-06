@@ -196,6 +196,24 @@ export default function TeamPage() {
     setBalancedTeams(null);
   };
 
+  const handleCopyResult = () => {
+    if (!balancedTeams) return;
+
+    const team1Names = balancedTeams.team1List.map(s => s.summonerName).join(', ');
+    const team2Names = balancedTeams.team2List.map(s => s.summonerName).join(', ');
+
+    const copyText = `1팀: ${team1Names}\n2팀: ${team2Names}`;
+
+    navigator.clipboard.writeText(copyText)
+      .then(() => {
+        alert('결과를 복사하였습니다. \n채팅창에 붙여넣어 친구들에게 공유해주세요!');
+      })
+      .catch(err => {
+        console.error('클립보드 복사 실패:', err);
+        alert('클립보드 복사에 실패했습니다.');
+      });
+  };
+
   const getLatestIconImgVersion = async () => {
     try {
       const response = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
@@ -812,6 +830,9 @@ export default function TeamPage() {
             <div className="team-actions">
               <button className="reset-btn" onClick={handleBackToPlacement}>
                 다시하기
+              </button>
+              <button className="generate-result-btn" onClick={handleCopyResult}>
+                결과 복사하기
               </button>
             </div>
           </div>
