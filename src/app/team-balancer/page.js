@@ -741,7 +741,7 @@ export default function TeamPage() {
       </div>
       {!localStorage.getItem('isLoggedIn') ? (
         <div className="login-notice">
-          로그인 후, 친구들의 소환사계정을 추가하고 내전에 사용할 팀을 짜보세요!
+          로그인 후, 친구들의 소환사계정을<br />추가하고 내전에 사용할 팀을 짜보세요!
         </div>
       ) : (
         <div className="add-summoner-section">
