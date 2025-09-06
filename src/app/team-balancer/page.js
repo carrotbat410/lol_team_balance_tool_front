@@ -24,9 +24,9 @@ export default function TeamPage() {
   const [tagLine, setTagLine] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
   const [teamAssignMode, setTeamAssignMode] = useState("GOLDEN_BALANCE");
-  const [team1, setTeam1] = useState([]);
-  const [team2, setTeam2] = useState([]);
-  const [unassigned, setUnassigned] = useState([]);
+  const [team1List, setTeam1List] = useState([]);
+  const [team2List, setTeam2List] = useState([]);
+  const [noTeamList, setNoTeamList] = useState([]);
   const [draggedSummoner, setDraggedSummoner] = useState(null);
   const [formMessage, setFormMessage] = useState({ type: '', text: '' });
   const [refreshingSummoner, setRefreshingSummoner] = useState(null);
@@ -69,12 +69,12 @@ export default function TeamPage() {
     e.preventDefault();
     if (!draggedSummoner) return;
 
-    const isNewSummoner = !team1.find(s => s.no === draggedSummoner.no) &&
-                          !team2.find(s => s.no === draggedSummoner.no) &&
-                          !unassigned.find(s => s.no === draggedSummoner.no);
+    const isNewSummoner = !team1List.find(s => s.no === draggedSummoner.no) &&
+                          !team2List.find(s => s.no === draggedSummoner.no) &&
+                          !noTeamList.find(s => s.no === draggedSummoner.no);
 
     if (isNewSummoner) {
-      const totalInTeams = team1.length + team2.length + unassigned.length;
+      const totalInTeams = team1List.length + team2List.length + noTeamList.length;
       if (totalInTeams >= 10) {
         alert('10명을 초과하여 배치할 수는 없습니다.');
         setDraggedSummoner(null);
@@ -83,15 +83,15 @@ export default function TeamPage() {
     }
 
     // 드롭 대상 팀 인원 제한 체크 (팀1/팀2는 최대 5명)
-    if (targetTeam === 'team1' && team1.find(s => s.no === draggedSummoner.no) == null) {
-      if (team1.length >= 5) {
+    if (targetTeam === 'team1' && team1List.find(s => s.no === draggedSummoner.no) == null) {
+      if (team1List.length >= 5) {
         alert('1팀에는 최대 5명까지 배치할 수 있습니다.');
         setDraggedSummoner(null);
         return;
       }
     }
-    if (targetTeam === 'team2' && team2.find(s => s.no === draggedSummoner.no) == null) {
-      if (team2.length >= 5) {
+    if (targetTeam === 'team2' && team2List.find(s => s.no === draggedSummoner.no) == null) {
+      if (team2List.length >= 5) {
         alert('2팀에는 최대 5명까지 배치할 수 있습니다.');
         setDraggedSummoner(null);
         return;
@@ -99,21 +99,21 @@ export default function TeamPage() {
     }
 
     // 기존 위치에서 제거
-    setTeam1(prev => prev.filter(s => s.no !== draggedSummoner.no));
-    setTeam2(prev => prev.filter(s => s.no !== draggedSummoner.no));
-    setUnassigned(prev => prev.filter(s => s.no !== draggedSummoner.no));
+    setTeam1List(prev => prev.filter(s => s.no !== draggedSummoner.no));
+    setTeam2List(prev => prev.filter(s => s.no !== draggedSummoner.no));
+    setNoTeamList(prev => prev.filter(s => s.no !== draggedSummoner.no));
     setSummoners(prev => prev.filter(s => s.no !== draggedSummoner.no));
 
     // 새 위치에 추가
     switch (targetTeam) {
       case 'team1':
-        setTeam1(prev => [...prev, draggedSummoner]);
+        setTeam1List(prev => [...prev, draggedSummoner]);
         break;
       case 'team2':
-        setTeam2(prev => [...prev, draggedSummoner]);
+        setTeam2List(prev => [...prev, draggedSummoner]);
         break;
       case 'unassigned':
-        setUnassigned(prev => [...prev, draggedSummoner]);
+        setNoTeamList(prev => [...prev, draggedSummoner]);
         break;
       case 'summoner-list':
         setSummoners(prev => [...prev, draggedSummoner]);
@@ -123,29 +123,29 @@ export default function TeamPage() {
   };
 
   const handleGenerateResult = () => {
-    const totalInZones = team1.length + team2.length + unassigned.length;
+    const totalInZones = team1List.length + team2List.length + noTeamList.length;
     if (totalInZones !== 10) {
       alert('총 10명이 1팀/2팀/팀 미지정에 배치되어야 합니다. 현재 배치된 인원: ' + totalInZones + '명');
       return;
     }
-    if (team1.length > 5) {
-      alert('1팀에는 최대 5명까지 배치할 수 있습니다. 현재: ' + team1.length + '명');
+    if (team1List.length > 5) {
+      alert('1팀에는 최대 5명까지 배치할 수 있습니다. 현재: ' + team1List.length + '명');
       return;
     }
-    if (team2.length > 5) {
-      alert('2팀에는 최대 5명까지 배치할 수 있습니다. 현재: ' + team2.length + '명');
+    if (team2List.length > 5) {
+      alert('2팀에는 최대 5명까지 배치할 수 있습니다. 현재: ' + team2List.length + '명');
       return;
     }
 
     // TODO: 팀 밸런싱 로직 구현 / 현재는 통과만
-    console.log('결과 생성:', { teamAssignMode, team1, team2, unassigned });
+    console.log('결과 생성:', { teamAssignMode, team1List, team2List, noTeamList });
   };
 
   const handleReset = () => {
     // 모든 팀 구역을 비우고 소환사 목록을 원래 상태로 복원
-    setTeam1([]);
-    setTeam2([]);
-    setUnassigned([]);
+    setTeam1List([]);
+    setTeam2List([]);
+    setNoTeamList([]);
     
     // 소환사 목록을 원래 데이터로 복원
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -587,7 +587,7 @@ export default function TeamPage() {
       <div className="team-page">
         <div className="team-layout">
           <div className="team-left">
-            <h2>팀 배치 ({team1.length + team2.length + unassigned.length}/10)</h2>
+            <h2>팀 배치 ({team1List.length + team2List.length + noTeamList.length}/10)</h2>
             <p>로딩 중...</p>
           </div>
           <div className="team-right">
@@ -609,7 +609,7 @@ export default function TeamPage() {
       <div className="team-layout">
         <div className="team-left">
           <div className="team-header">
-            <h2>팀 배치 ({team1.length + team2.length + unassigned.length}/10)</h2>
+            <h2>팀 배치 ({team1List.length + team2List.length + noTeamList.length}/10)</h2>
             <div className="team-mode-selector">
               <span>팀 섞기 모드</span>
               <select 
@@ -625,9 +625,9 @@ export default function TeamPage() {
             </div>
           </div>
           <div className="team-zones">
-            {renderTeamZone(team1, "1팀", "team1")}
-            {renderTeamZone(team2, "2팀", "team2")}
-            {renderTeamZone(unassigned, "팀 미지정", "unassigned")}
+            {renderTeamZone(team1List, "1팀", "team1")}
+            {renderTeamZone(team2List, "2팀", "team2")}
+            {renderTeamZone(noTeamList, "팀 미지정", "unassigned")}
           </div>
           <div className="team-actions">
             <button className="generate-result-btn" onClick={handleGenerateResult}>
