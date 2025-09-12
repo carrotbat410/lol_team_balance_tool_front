@@ -419,6 +419,16 @@ export default function TeamPage() {
     };
 
     initializeData();
+
+    const handleStorageChange = () => {
+      initializeData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const getTempData = () => {
