@@ -27,11 +27,6 @@ jobs:
       env:
         NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
-    - name: Verify Build Output
-      run: |
-        echo "Searching for API URL in built files..."
-        grep -r "http" .next/ || echo "API URL not found in .next"
-
     - name: Login to Docker Hub
       uses: docker/login-action@v2
       with:
@@ -44,6 +39,7 @@ jobs:
         context: .
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/lol_team_balance_tool_front:latest
+        build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
 
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
