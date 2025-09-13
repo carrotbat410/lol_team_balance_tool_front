@@ -1,0 +1,47 @@
+name: Deploy Next.js Frontend to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build Next.js app
+      run: npm run build
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/lol_team_balance_tool_front:latest
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_PRIVATE_KEY }}
+        script: |
+          cd /home/ubuntu/lol_team_balance_tool_back
+          sudo bash ./deploy-frontend.sh
