@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "echo 'Node.js sees API_URL as: $NEXT_PUBLIC_API_URL'",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
