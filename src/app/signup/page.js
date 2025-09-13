@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import API_BASE_URL from '../utils/api';
 
 export default function SignupPage() {
   const [username, setUsername] = useState("");
@@ -46,7 +47,7 @@ export default function SignupPage() {
     }
 
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/join`, {
+        const res = await fetch(`${API_BASE_URL}/join`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',

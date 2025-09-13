@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import API_BASE_URL from '../utils/api';
 
 const debounce = (func, delay) => {
   let timeoutId;
@@ -141,7 +142,7 @@ export default function TeamPage() {
 
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/team/balance`, {
+      const res = await fetch(`${API_BASE_URL}/team/balance`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +239,7 @@ export default function TeamPage() {
 
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/summoner`, {
+      const res = await fetch(`${API_BASE_URL}/summoner`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,7 +255,7 @@ export default function TeamPage() {
       
       if (res.ok) {
         setFormMessage({ type: 'success', text: '유저를 추가했습니다.' });
-        const summonersRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/summoners?size=30`, {
+        const summonersRes = await fetch(`${API_BASE_URL}/summoners?size=30`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -306,7 +307,7 @@ export default function TeamPage() {
 
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/summoner?no=${summonerNo}`, {
+      const res = await fetch(`${API_BASE_URL}/summoner?no=${summonerNo}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -332,7 +333,7 @@ export default function TeamPage() {
     setRefreshingSummoner(summonerNo);
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/summoner`, {
+      const res = await fetch(`${API_BASE_URL}/summoner`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -374,7 +375,7 @@ export default function TeamPage() {
   const fetchSummoners = async () => {
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/summoners?size=30`, {
+      const res = await fetch(`${API_BASE_URL}/summoners?size=30`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
