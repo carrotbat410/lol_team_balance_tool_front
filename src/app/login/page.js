@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       // * INFO `fetch` 함수의 `body`에 `FormData` 객체를 전달하면, 브라우저는 자동으로 `Content-Type` 헤더를 `multipart/form-data`로 설정함.
       // * `Content-Type`을 수동으로 설정하면 안 됨. 수동 설정시 form-data 의 boundary 가 누락되어 서버에서 파싱 불가해짐.
-            const res = await fetch("http://localhost:8080/api/login", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
         method: "POST",
         body: formData,
       });
