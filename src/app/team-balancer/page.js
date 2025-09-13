@@ -141,7 +141,7 @@ export default function TeamPage() {
 
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch('http://localhost:8080/team/balance', {
+            const res = await fetch('http://localhost:8080/api/team/balance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +238,7 @@ export default function TeamPage() {
 
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch('http://localhost:8080/summoner', {
+      const res = await fetch('http://localhost:8080/api/summoner', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ export default function TeamPage() {
       
       if (res.ok) {
         setFormMessage({ type: 'success', text: '유저를 추가했습니다.' });
-        const summonersRes = await fetch('http://localhost:8080/summoners?size=30', {
+        const summonersRes = await fetch('http://localhost:8080/api/summoners?size=30', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -306,7 +306,7 @@ export default function TeamPage() {
 
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch(`http://localhost:8080/summoner?no=${summonerNo}`, {
+            const res = await fetch(`http://localhost:8080/api/summoner?no=${summonerNo}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -332,7 +332,7 @@ export default function TeamPage() {
     setRefreshingSummoner(summonerNo);
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch('http://localhost:8080/summoner', {
+      const res = await fetch('http://localhost:8080/api/summoner', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -374,7 +374,7 @@ export default function TeamPage() {
   const fetchSummoners = async () => {
     try {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-      const res = await fetch('http://localhost:8080/summoners?size=30', {
+      const res = await fetch('http://localhost:8080/api/summoners?size=30', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -46,7 +46,7 @@ export default function SignupPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:8080/join", {
+            const res = await fetch("http://localhost:8080/api/join", {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',
