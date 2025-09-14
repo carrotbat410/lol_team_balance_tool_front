@@ -42,4 +42,4 @@ export default function NavbarRight() {
   return (
     <Link href="/login" className="login-btn">로그인</Link>
   );
-} 
+}
