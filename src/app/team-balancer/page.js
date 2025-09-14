@@ -4,6 +4,10 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import API_BASE_URL from '../utils/api';
 
+const customImageLoader = ({ src, width, quality }) => {
+  return src; // Return the original src directly
+};
+
 const debounce = (func, delay) => {
   let timeoutId;
   return (...args) => {
@@ -627,6 +631,7 @@ export default function TeamPage() {
           >
             <div className="member-profile">
               <Image 
+                loader={customImageLoader}
                 src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
                 alt="프로필 아이콘"
                 width={32}
@@ -666,6 +671,7 @@ export default function TeamPage() {
           >
             <div className="member-profile">
               <Image 
+                loader={customImageLoader}
                 src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
                 alt="프로필 아이콘"
                 width={32}
@@ -712,6 +718,7 @@ export default function TeamPage() {
             <div className="summoner-profile">
               <div className="profile-icon">
                 <Image 
+                  loader={customImageLoader}
                   src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
                   alt="프로필 아이콘"
                   width={40}
