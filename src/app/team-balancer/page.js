@@ -626,7 +626,7 @@ export default function TeamPage() {
             className="team-member"
           >
             <div className="member-profile">
-              <Image 
+              <img 
                 src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
                 alt="프로필 아이콘"
                 width={32}
@@ -665,7 +665,7 @@ export default function TeamPage() {
             onDragStart={(e) => handleDragStart(e, summoner)}
           >
             <div className="member-profile">
-              <Image 
+              <img 
                 src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
                 alt="프로필 아이콘"
                 width={32}
@@ -711,7 +711,7 @@ export default function TeamPage() {
             )}
             <div className="summoner-profile">
               <div className="profile-icon">
-                <Image 
+                <img 
                   src={`https://ddragon.leagueoflegends.com/cdn/${iconVersion}/img/profileicon/${summoner.profileIconId}.png`}
                   alt="프로필 아이콘"
                   width={40}
