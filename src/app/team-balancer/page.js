@@ -299,18 +299,7 @@ export default function TeamPage() {
       
       if (res.ok) {
         setFormMessage({ type: 'success', text: '유저를 추가했습니다.' });
-        const summonersRes = await fetch(`${API_BASE_URL}/summoners?size=30`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (handleApiError(summonersRes.status)) return;
-        
-        if (summonersRes.ok) {
-          const data = await summonersRes.json();
-          setSummoners(data.data.content);
-        }
+        await fetchSummoners();
         
         setSummonerName("");
         setTagLine("");
@@ -429,7 +418,14 @@ export default function TeamPage() {
       
       if (res.ok) {
         const data = await res.json();
-        setSummoners(data.data.content);
+        const allFetchedSummoners = data.data.content;
+        const placedSummonerNos = new Set([
+          ...team1List.map(s => s.no),
+          ...team2List.map(s => s.no),
+          ...noTeamList.map(s => s.no)
+        ]);
+        const filteredSummoners = allFetchedSummoners.filter(s => !placedSummonerNos.has(s.no));
+        setSummoners(filteredSummoners);
       } else {
         // API 실패 시 임시 데이터 사용
         const tempData = getTempData();
