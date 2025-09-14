@@ -631,6 +631,7 @@ export default function TeamPage() {
                 alt="프로필 아이콘"
                 width={32}
                 height={32}
+                unoptimized={true}
               />
               <span className="member-level">{summoner.summonerLevel}</span>
             </div>
@@ -670,6 +671,7 @@ export default function TeamPage() {
                 alt="프로필 아이콘"
                 width={32}
                 height={32}
+                unoptimized={true}
               />
               <span className="member-level">{summoner.summonerLevel}</span>
             </div>
@@ -716,6 +718,7 @@ export default function TeamPage() {
                   alt="프로필 아이콘"
                   width={40}
                   height={40}
+                  unoptimized={true}
                 />
                 <span className="level">{summoner.summonerLevel}</span>
               </div>
