@@ -448,6 +448,13 @@ export default function TeamPage() {
         
         if (isLoggedIn) {
           await fetchSummoners();
+          // 로그인 시 팀 목록 초기화
+          setTeam1List([]);
+          setTeam2List([]);
+          setNoTeamList([]);
+          localStorage.removeItem('team1List');
+          localStorage.removeItem('team2List');
+          localStorage.removeItem('noTeamList');
         } else {
           // 로그인 안된 경우 임시 데이터 사용 및 팀 목록 초기화
           const tempData = getTempData();
