@@ -22,6 +22,9 @@ export default function NavbarRight() {
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
+    localStorage.removeItem('team1List');
+    localStorage.removeItem('team2List');
+    localStorage.removeItem('noTeamList');
     window.dispatchEvent(new Event('storage'));
     router.push('/');
   };

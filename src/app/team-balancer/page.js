@@ -29,15 +29,52 @@ export default function TeamPage() {
   const [tagLine, setTagLine] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
   const [teamAssignMode, setTeamAssignMode] = useState("GOLDEN_BALANCE");
-  const [team1List, setTeam1List] = useState([]);
-  const [team2List, setTeam2List] = useState([]);
-  const [noTeamList, setNoTeamList] = useState([]);
+  const [team1List, setTeam1List] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTeam1 = localStorage.getItem('team1List');
+      return savedTeam1 ? JSON.parse(savedTeam1) : [];
+    }
+    return [];
+  });
+  const [team2List, setTeam2List] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTeam2 = localStorage.getItem('team2List');
+      return savedTeam2 ? JSON.parse(savedTeam2) : [];
+    }
+    return [];
+  });
+  const [noTeamList, setNoTeamList] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedNoTeam = localStorage.getItem('noTeamList');
+      return savedNoTeam ? JSON.parse(savedNoTeam) : [];
+    }
+    return [];
+  });
   const [draggedSummoner, setDraggedSummoner] = useState(null);
   const [formMessage, setFormMessage] = useState({ type: '', text: '' });
   const [refreshingSummoner, setRefreshingSummoner] = useState(null);
   const [showResultView, setShowResultView] = useState(false);
   const [balancedTeams, setBalancedTeams] = useState(null);
   const router = useRouter();
+
+  // Save team lists to localStorage whenever they change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('team1List', JSON.stringify(team1List));
+    }
+  }, [team1List]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('team2List', JSON.stringify(team2List));
+    }
+  }, [team2List]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('noTeamList', JSON.stringify(noTeamList));
+    }
+  }, [noTeamList]);
 
   const handleSessionExpired = () => {
     setSessionExpired(true);
@@ -183,6 +220,9 @@ export default function TeamPage() {
     setNoTeamList([]);
     setShowResultView(false);
     setBalancedTeams(null);
+    localStorage.removeItem('team1List');
+    localStorage.removeItem('team2List');
+    localStorage.removeItem('noTeamList');
     
     // 소환사 목록을 원래 데이터로 복원
     const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
@@ -413,9 +453,12 @@ export default function TeamPage() {
         if (isLoggedIn) {
           await fetchSummoners();
         } else {
-          // 로그인 안된 경우 임시 데이터 사용
+          // 로그인 안된 경우 임시 데이터 사용 및 팀 목록 초기화
           const tempData = getTempData();
           setSummoners(tempData);
+          setTeam1List([]);
+          setTeam2List([]);
+          setNoTeamList([]);
         }
         setLoading(false);
       };
