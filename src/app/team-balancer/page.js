@@ -57,6 +57,18 @@ export default function TeamPage() {
   const [balancedTeams, setBalancedTeams] = useState(null);
   const router = useRouter();
 
+  const getAuthHeaders = (includeContentType = true) => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    const headers = {};
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    if (token && token !== 'undefined') {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
   // Save team lists to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -182,13 +194,9 @@ export default function TeamPage() {
     }
 
     try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const res = await fetch(`${API_BASE_URL}/team/balance`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           teamAssignMode,
           team1List,
@@ -282,13 +290,9 @@ export default function TeamPage() {
     setFormMessage({ type: '', text: '' });
 
     try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const res = await fetch(`${API_BASE_URL}/summoner`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           summonerName: summonerName,
           tagLine: tagLine.trim() === '' ? 'KR1' : tagLine
@@ -339,12 +343,9 @@ export default function TeamPage() {
     }
 
     try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const res = await fetch(`${API_BASE_URL}/summoner?no=${summonerNo}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders(false)
       });
 
       if (handleApiError(res.status)) return;
@@ -365,13 +366,9 @@ export default function TeamPage() {
   const handleRefresh = useCallback(async (summonerName, tagLine, summonerNo) => {
     setRefreshingSummoner(summonerNo);
     try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const res = await fetch(`${API_BASE_URL}/summoner`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           summonerName: summonerName,
           tagLine: tagLine
@@ -407,11 +404,8 @@ export default function TeamPage() {
 
   const fetchSummoners = async () => {
     try {
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       const res = await fetch(`${API_BASE_URL}/summoners?size=30`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders(false)
       });
       
       if (handleApiError(res.status)) return;
@@ -889,7 +883,7 @@ export default function TeamPage() {
             <div className="team-zones">
               {renderResultTeamZone(balancedTeams.team1List, `1팀 - 평균 티어: ${balancedTeams.team1AvgTierRank}`, "team1")}
               {renderResultTeamZone(balancedTeams.team2List, `2팀 - 평균 티어: ${balancedTeams.team2AvgTierRank}`, "team2")}
-              {renderResultTeamZone([], '\u00A0', "unassigned")}
+              {renderResultTeamZone([], ' ', "unassigned")}
             </div>
             <div className="team-actions">
               <button className="reset-btn" onClick={handleBackToPlacement}>
