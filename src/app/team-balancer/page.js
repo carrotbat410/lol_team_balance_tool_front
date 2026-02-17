@@ -472,7 +472,9 @@ export default function TeamPage() {
     const newTierMMR = (() => {
         switch (newTier) {
             case "CHALLENGER":
+                return 31;
             case "GRANDMASTER":
+                return 30;
             case "MASTER":
                 return 29;
             case "DIAMOND":
