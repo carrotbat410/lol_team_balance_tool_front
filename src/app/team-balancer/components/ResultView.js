@@ -25,7 +25,8 @@ const ResultView = ({
   handleDragStart,
   debouncedHandleRefresh,
   handleDelete,
-  refreshingSummoner
+  refreshingSummoner,
+  handleTierChange
 }) => {
   return (
     <div className="team-page">
@@ -78,6 +79,8 @@ const ResultView = ({
           debouncedHandleRefresh={debouncedHandleRefresh}
           handleDelete={handleDelete}
           refreshingSummoner={refreshingSummoner}
+          isTierEditable={false}
+          handleTierChange={handleTierChange}
         />
       </div>
     </div>

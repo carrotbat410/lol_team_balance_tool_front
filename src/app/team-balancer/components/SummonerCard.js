@@ -2,10 +2,14 @@
 import Image from 'next/image';
 import { getTierColor, getTierText, customImageLoader } from '../utils/utils';
 
-const SummonerCard = ({ summoner, iconVersion, handleDragStart, debouncedHandleRefresh, handleDelete, refreshingSummoner, isLoggedIn }) => {
+const SummonerCard = ({ summoner, iconVersion, handleDragStart, debouncedHandleRefresh, handleDelete, refreshingSummoner, isLoggedIn, isTierEditable, handleTierChange }) => {
   const winRate = summoner.wins + summoner.losses > 0
     ? Math.round((summoner.wins / (summoner.wins + summoner.losses)) * 100)
     : 0;
+
+  const rankedTiers = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND"];
+  const highTiers = ["MASTER", "GRANDMASTER", "CHALLENGER"];
+  const ranks = ["IV", "III", "II", "I"];
 
   return (
     <div
@@ -33,12 +37,33 @@ const SummonerCard = ({ summoner, iconVersion, handleDragStart, debouncedHandleR
           <div className={`summoner-name ${summoner.summonerName.length > 11 ? 'long' : ''}`}>
             {summoner.summonerName}#{summoner.tagLine}
           </div>
-          <div
-            className="summoner-tier"
-            style={{ color: getTierColor(summoner.tier) }}
-          >
-            {getTierText(summoner.tier, summoner.rank)}
-          </div>
+          {isTierEditable ? (
+            <select
+              className="summoner-tier-select"
+              value={`${summoner.tier}_${summoner.rank}`}
+              onChange={(e) => {
+                const [tier, rank] = e.target.value.split('_');
+                handleTierChange(summoner.no, tier, parseInt(rank, 10));
+              }}
+              style={{ color: getTierColor(summoner.tier), backgroundColor: '#1a1a1a', border: 'none', fontSize: '0.8rem' }}
+              onClick={(e) => e.stopPropagation()} // 이벤트 전파 중지
+            >
+              <option value="UNRANKED_0">UNRANKED</option>
+              {rankedTiers.flatMap(tier =>
+                ranks.map((rank, i) => (
+                  <option key={`${tier}_${4 - i}`} value={`${tier}_${4 - i}`}>{`${tier} ${rank}`}</option>
+                ))
+              )}
+              {highTiers.map(tier => <option key={tier} value={`${tier}_1`}>{tier}</option>)}
+            </select>
+          ) : (
+            <div
+              className="summoner-tier"
+              style={{ color: getTierColor(summoner.tier) }}
+            >
+              {getTierText(summoner.tier, summoner.rank)}
+            </div>
+          )}
           <div className="summoner-stats">
             승률: {winRate}% ({summoner.wins}승 {summoner.losses}패)
           </div>

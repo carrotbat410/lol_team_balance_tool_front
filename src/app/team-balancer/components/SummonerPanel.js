@@ -22,7 +22,9 @@ const SummonerPanel = ({
   handleDragStart,
   debouncedHandleRefresh,
   handleDelete,
-  refreshingSummoner
+  refreshingSummoner,
+  isTierEditable,
+  handleTierChange
 }) => {
   return (
     <div className="team-right">
@@ -43,6 +45,8 @@ const SummonerPanel = ({
             handleDelete={handleDelete}
             refreshingSummoner={refreshingSummoner}
             isLoggedIn={isLoggedIn}
+            isTierEditable={isTierEditable}
+            handleTierChange={handleTierChange}
           />
         ))}
       </div>

@@ -468,6 +468,42 @@ export default function TeamPage() {
     };
   }, []);
 
+  const handleTierChange = (summonerNo, newTier, newRank) => {
+    const newTierMMR = (() => {
+        switch (newTier) {
+            case "CHALLENGER":
+            case "GRANDMASTER":
+            case "MASTER":
+                return 29;
+            case "DIAMOND":
+                return 25 + (4 - newRank);
+            case "EMERALD":
+                return 21 + (4 - newRank);
+            case "PLATINUM":
+                return 17 + (4 - newRank);
+            case "GOLD":
+                return 13 + (4 - newRank);
+            case "SILVER":
+                return 9 + (4 - newRank);
+            case "BRONZE":
+                return 5 + (4 - newRank);
+            case "IRON":
+                return 1 + (4 - newRank);
+            default: // UNRANKED
+                return 0;
+        }
+    })();
+
+    const updateSummoner = (list) => list.map(s =>
+        s.no === summonerNo ? { ...s, tier: newTier, rank: newRank, mmr: newTierMMR } : s
+    );
+
+    setSummoners(prev => updateSummoner(prev));
+    setTeam1List(prev => updateSummoner(prev));
+    setTeam2List(prev => updateSummoner(prev));
+    setNoTeamList(prev => updateSummoner(prev));
+  };
+
   const getTempData = () => {
     return [
         {
@@ -670,6 +706,7 @@ export default function TeamPage() {
         debouncedHandleRefresh={debouncedHandleRefresh}
         handleDelete={handleDelete}
         refreshingSummoner={refreshingSummoner}
+        handleTierChange={handleTierChange}
       />
     );
   }
@@ -749,6 +786,8 @@ export default function TeamPage() {
           debouncedHandleRefresh={debouncedHandleRefresh}
           handleDelete={handleDelete}
           refreshingSummoner={refreshingSummoner}
+          isTierEditable={true}
+          handleTierChange={handleTierChange}
         />
       </div>
     </div>
