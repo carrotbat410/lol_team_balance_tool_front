@@ -22,22 +22,26 @@ export default function SignupPage() {
     return false;
   };
 
-  const validateInput = (value) => {
+  const validateUserId = (value) => {
     const regex = /^[a-zA-Z0-9]+$/;
     return regex.test(value) && value.length >= 6;
+  };
+
+  const validatePassword = (value) => {
+    return typeof value === "string" && value.length >= 6;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     
-    if (!validateInput(username)) {
+    if (!validateUserId(username)) {
       setError("아이디는 영문, 숫자만 입력 가능하며 최소 6자 이상 입력해주세요.");
       return;
     }
     
-    if (!validateInput(password)) {
-      setError("비밀번호는 영문, 숫자만 입력 가능하며 최소 6자 이상 입력해주세요.");
+    if (!validatePassword(password)) {
+      setError("비밀번호는 최소 6자 이상 입력해주세요.");
       return;
     }
     
@@ -97,7 +101,7 @@ export default function SignupPage() {
           value={password} 
           onChange={e => setPassword(e.target.value)} 
         />
-        <div className="input-hint">영문, 숫자만 입력 가능. 최소 6자 이상 입력하세요</div>
+        <div className="input-hint">최소 6자 이상 입력하세요 (특수문자 포함 가능)</div>
         <label htmlFor="confirmPassword">비밀번호 확인</label>
         <input 
           id="confirmPassword" 
