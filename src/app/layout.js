@@ -1,26 +1,7 @@
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from 'next/link';
-import Image from 'next/image';
 import NavbarRight from './components/NavbarRight';
 import LogoLink from './components/LogoLink';
-import { Noto_Sans_KR } from 'next/font/google';
-
-const notoSansKR = Noto_Sans_KR({
-  weight: ['100', '300', '400', '500'], // 사용하고자 하는 폰트 굵기 설정
-  subsets: ['latin', 'cyrillic'], // 언어 설정 (필요에 따라 추가)
-  display: 'swap', // 폰트 로딩 최적화
-});
-
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["lat  in"],
-// });
 
 export const metadata = {
   title: "롤 내전 도우미 - 라이엇 데이터 연동을 통해 편리한 내전 팀 짜기",
@@ -30,7 +11,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ko">
-      <body className={notoSansKR.className}>
+      <body>
         <div className="logo-wrap container">
           <LogoLink />
         </div>
@@ -51,4 +32,3 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
-

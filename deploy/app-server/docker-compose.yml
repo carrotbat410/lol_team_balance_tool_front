@@ -1,0 +1,91 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: app-mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backups/lol_team_balance_tool_dump_2026-04-18.sql.gz:/docker-entrypoint-initdb.d/01-lol_team_balance_tool_dump.sql.gz:ro
+    networks:
+      - app-net
+
+  lol-back:
+    build:
+      context: /home/ubuntu/src/lol_team_balance_tool_back
+    container_name: lol-back
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JWT_SECRET: ${SPRING_JWT_SECRET}
+      RIOT_API_BASEURL_KR: ${RIOT_API_BASEURL_KR}
+      RIOT_API_BASEURL_ASIA: ${RIOT_API_BASEURL_ASIA}
+      RIOT_API_KEY: ${RIOT_API_KEY}
+    ports:
+      - "127.0.0.1:18080:8080"
+    networks:
+      - app-net
+
+  lol-front:
+    build:
+      context: /home/ubuntu/src/lol_team_balance_tool_front2
+      args:
+        NEXT_PUBLIC_API_URL: http://${APP_SERVER_IP}:3000/api
+    container_name: lol-front
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:13000:3000"
+    networks:
+      - app-net
+
+  mundo-game:
+    build:
+      context: /home/ubuntu/src/Mundo_dodgeball_game
+      dockerfile: apps/game-server/Dockerfile
+    container_name: mundo-game
+    restart: unless-stopped
+    environment:
+      PORT: "5000"
+      CLIENT_ORIGINS: http://${APP_SERVER_IP}:4000
+    ports:
+      - "127.0.0.1:15000:5000"
+    networks:
+      - app-net
+
+  mundo-web:
+    build:
+      context: /home/ubuntu/src/Mundo_dodgeball_game
+      dockerfile: apps/web/Dockerfile
+    container_name: mundo-web
+    restart: unless-stopped
+    depends_on:
+      - mundo-game
+    ports:
+      - "127.0.0.1:14000:3000"
+    networks:
+      - app-net
+
+volumes:
+  mysql_data:
+
+networks:
+  app-net:
+    driver: bridge

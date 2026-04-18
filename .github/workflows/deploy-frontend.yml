@@ -1,52 +1,27 @@
-name: Deploy Next.js Frontend to EC2
+name: 앱 서버 프론트 배포
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '22'
-
-    - name: Install dependencies
-      run: npm install
-
-    - name: Build Next.js app
-      run: |
-        echo "NEXT_PUBLIC_API_URL is: $NEXT_PUBLIC_API_URL"
-        npm run build
-      env:
-        NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/lol_team_balance_tool_front:latest
-        build-args: NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_PRIVATE_KEY }}
-        script: |
-          cd /home/ubuntu/lol_team_balance_tool_back
-          sudo bash ./deploy-frontend.sh
+      - name: 서버에 접속해 프론트 갱신
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.APP_SERVER_HOST }}
+          username: ${{ secrets.APP_SERVER_USER }}
+          key: ${{ secrets.APP_SERVER_SSH_KEY }}
+          port: ${{ secrets.APP_SERVER_PORT || 22 }}
+          script: |
+            set -e
+            cd /home/ubuntu/src/lol_team_balance_tool_front2
+            git fetch origin
+            git reset --hard origin/main
+            cd /home/ubuntu/app-stack
+            sudo docker compose build lol-front
+            sudo docker compose up -d lol-front
