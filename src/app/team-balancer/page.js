@@ -461,7 +461,15 @@ export default function TeamPage() {
 
     initializeData();
 
-    return undefined;
+    const handleAuthChange = () => {
+      initializeData();
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+    };
   }, []);
 
   const handleTierChange = (summonerNo, newTier, newRank) => {
