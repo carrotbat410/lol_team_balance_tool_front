@@ -5,7 +5,14 @@ import Image from 'next/image';
 export default function LogoLink() {
   return (
     <Link href="/" className="logo" onClick={() => window.location.href = '/'}>
-      <Image src="/logo.webp" alt="로고" width={120} height={20} />
+      <Image
+        src="/logo.webp"
+        alt="로고"
+        width={120}
+        height={60}
+        style={{ width: '120px', height: 'auto' }}
+        priority
+      />
     </Link>
   );
 }
