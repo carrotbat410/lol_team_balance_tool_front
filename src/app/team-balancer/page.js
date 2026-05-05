@@ -84,7 +84,7 @@ export default function TeamPage() {
     setSessionExpired(true);
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
-    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('auth-change'));
     setTimeout(() => {
       router.push('/login');
     }, 2000);
@@ -260,10 +260,14 @@ export default function TeamPage() {
 
   const getLatestIconImgVersion = async () => {
     try {
-      const response = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
-      const versions = await response.json();
-      const latestVersion = versions[0];
-      if (latestVersion && latestVersion !== "") {
+      const response = await fetch("/ddragon/version");
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const latestVersion = data?.version;
+      if (typeof latestVersion === "string" && latestVersion !== "") {
         return latestVersion;
       }
     } catch (err) {
@@ -457,15 +461,7 @@ export default function TeamPage() {
 
     initializeData();
 
-    const handleStorageChange = () => {
-      initializeData();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    return undefined;
   }, []);
 
   const handleTierChange = (summonerNo, newTier, newRank) => {

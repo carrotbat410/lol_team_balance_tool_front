@@ -31,7 +31,7 @@ export default function LoginPage() {
         // username을 localStorage에 저장
         localStorage.setItem("username", data.username);
         localStorage.setItem("isLoggedIn", "true");
-        window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new Event("auth-change"));
         router.push("/");
       } else if (res.status === 401) {
         setError("아이디 또는 비밀번호가 틀렸습니다.");

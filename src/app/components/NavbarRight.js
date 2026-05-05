@@ -12,11 +12,18 @@ export default function NavbarRight() {
     if (typeof window !== 'undefined') {
       setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
     }
-    const handleStorage = () => {
+
+    const syncLoginState = () => {
       setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
     };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+
+    window.addEventListener('storage', syncLoginState);
+    window.addEventListener('auth-change', syncLoginState);
+
+    return () => {
+      window.removeEventListener('storage', syncLoginState);
+      window.removeEventListener('auth-change', syncLoginState);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -25,7 +32,7 @@ export default function NavbarRight() {
     localStorage.removeItem('team1List');
     localStorage.removeItem('team2List');
     localStorage.removeItem('noTeamList');
-    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('auth-change'));
     router.push('/');
   };
 
