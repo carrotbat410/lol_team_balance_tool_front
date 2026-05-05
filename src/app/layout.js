@@ -1,11 +1,47 @@
 import "./globals.css";
-import Link from 'next/link';
-import NavbarRight from './components/NavbarRight';
-import LogoLink from './components/LogoLink';
+import Link from "next/link";
+import NavbarRight from "./components/NavbarRight";
+import LogoLink from "./components/LogoLink";
+import { siteConfig } from "./site-config";
 
 export const metadata = {
-  title: "롤 내전 도우미 - 라이엇 데이터 연동을 통해 편리한 내전 팀 짜기",
-  description: "롤 내전 도우미는 밸런스있게 팀짜기 서비스를 제공하는 사이트 입니다.",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: "롤 내전 도우미 | 롤 내전 팀 밸런스 맞추기",
+    template: "%s | 롤 내전 도우미",
+  },
+  description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    siteName: siteConfig.name,
+    title: "롤 내전 도우미 | 롤 내전 팀 밸런스 맞추기",
+    description: siteConfig.description,
+    url: siteConfig.url,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: "롤 내전 도우미 공유 이미지",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "롤 내전 도우미 | 롤 내전 팀 밸런스 맞추기",
+    description: siteConfig.description,
+    images: [siteConfig.ogImage],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({ children }) {

@@ -719,6 +719,14 @@ export default function TeamPage() {
 
   return (
     <div className="team-page">
+      <section className="team-page-intro">
+        <h1>롤 내전 팀 밸런서</h1>
+        <p>
+          소환사 정보를 불러와 참가자를 배치하고, 5:5 내전 팀을 빠르게
+          정리해보세요. 결과는 바로 복사해서 디스코드나 단톡방에 공유할 수
+          있습니다.
+        </p>
+      </section>
       <div className="team-layout">
         <div className="team-left">
           <div className="team-header">

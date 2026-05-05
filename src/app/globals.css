@@ -78,6 +78,10 @@ body {
   min-width: 1024px;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.25;
+}
+
 ol, ul {
   list-style: none;
 }
@@ -209,6 +213,25 @@ button, input, select, textarea {
 
 .contact-btn:hover {
   background: #23232b;
+}
+
+.team-page-intro {
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(30, 41, 59, 0.92));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+}
+
+.team-page-intro h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.team-page-intro p {
+  max-width: 780px;
+  color: #dbe4f0;
 }
 
 /* 로그인 페이지 스타일 */
