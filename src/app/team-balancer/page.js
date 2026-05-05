@@ -521,18 +521,6 @@ export default function TeamPage() {
             "profileIconId": 6
         },
         {
-            "no": 51,
-            "summonerName": "괴물쥐",
-            "tagLine": "KR3",
-            "tier": "DIAMOND",
-            "rank": 1,
-            "mmr": 28,
-            "summonerLevel": 1213,
-            "wins": 460,
-            "losses": 448,
-            "profileIconId": 3463
-        },
-        {
             "no": 52,
             "summonerName": "Akaps",
             "tagLine": "KR1",
@@ -663,6 +651,18 @@ export default function TeamPage() {
             "wins": 23,
             "losses": 22,
             "profileIconId": 4568
+        },
+                {
+            "no": 51,
+            "summonerName": "괴물쥐",
+            "tagLine": "KR3",
+            "tier": "DIAMOND",
+            "rank": 1,
+            "mmr": 28,
+            "summonerLevel": 1213,
+            "wins": 460,
+            "losses": 448,
+            "profileIconId": 3463
         },
     ];
   };
