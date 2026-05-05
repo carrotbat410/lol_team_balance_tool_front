@@ -42,6 +42,11 @@ export const metadata = {
     shortcut: "/favicon.ico",
     apple: "/favicon.ico",
   },
+  verification: {
+    other: {
+      "naver-site-verification": "5a3d178bfeb9361348a7ae0f804577bfc4d0e8c7",
+    },
+  },
 };
 
 export default function RootLayout({ children }) {
