@@ -20,6 +20,7 @@ export default function RootLayout({ children }) {
             <ul className="nav-menu">
               <li><Link href="/community">커뮤니티</Link></li>
               <li><Link href="/team-balancer">팀짜기</Link></li>
+              <li><a href="https://game.lolcivilwarhelper.kro.kr" target="_blank" rel="noreferrer">문도 피구</a></li>
             </ul>
             <div className="nav-right">
               <NavbarRight />
