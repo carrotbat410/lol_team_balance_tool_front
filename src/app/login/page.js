@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import API_BASE_URL from '../utils/api';
+import { clearAuthState } from '../utils/auth';
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -34,11 +35,14 @@ export default function LoginPage() {
         window.dispatchEvent(new Event("auth-change"));
         router.push("/");
       } else if (res.status === 401) {
+        clearAuthState();
         setError("아이디 또는 비밀번호가 틀렸습니다.");
       } else {
+        clearAuthState();
         setError("알 수 없는 오류가 발생했습니다.");
       }
     } catch (err) {
+      clearAuthState();
       setError("서버와 연결할 수 없습니다.");
     }
   };

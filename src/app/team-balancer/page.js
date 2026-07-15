@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import API_BASE_URL from '../utils/api';
+import { clearAuthState, getAuthToken, isStoredLoginActive } from '../utils/auth';
 import { debounce, getTierColor, getTierText } from './utils/utils';
 import TeamZone from './components/TeamZone';
 import SummonerPanel from './components/SummonerPanel';
@@ -46,16 +47,16 @@ export default function TeamPage() {
   const router = useRouter();
 
   useEffect(() => {
-    setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+    setIsLoggedIn(isStoredLoginActive());
   }, []);
 
   const getAuthHeaders = (includeContentType = true) => {
-    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    const token = getAuthToken();
     const headers = {};
     if (includeContentType) {
       headers['Content-Type'] = 'application/json';
     }
-    if (token && token !== 'undefined') {
+    if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
@@ -80,23 +81,51 @@ export default function TeamPage() {
     }
   }, [noTeamList]);
 
-  const handleSessionExpired = () => {
-    setSessionExpired(true);
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('username');
+  const switchToGuestMode = () => {
+    clearAuthState();
+    setIsLoggedIn(false);
+    setSessionExpired(false);
     window.dispatchEvent(new Event('auth-change'));
-    setTimeout(() => {
-      router.push('/login');
-    }, 2000);
+    const tempData = getTempData();
+    setSummoners(tempData);
+    setTeam1List([]);
+    setTeam2List([]);
+    setNoTeamList([]);
+    localStorage.removeItem('team1List');
+    localStorage.removeItem('team2List');
+    localStorage.removeItem('noTeamList');
   };
 
-  const handleApiError = (status) => {
+  const handleSessionExpired = (shouldRedirect = true) => {
+    setSessionExpired(true);
+    switchToGuestMode();
+
+    if (shouldRedirect) {
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+    }
+  };
+
+  const handleApiError = (status, options = {}) => {
+    const { silentAuthFailure = false } = options;
+
     if (status === 401) {
+      if (silentAuthFailure) {
+        handleSessionExpired(false);
+        return true;
+      }
+
       alert("세션이 만료되었습니다. 다시 로그인 후 시도해주세요.");
-      handleSessionExpired();
+      handleSessionExpired(true);
       return true;
     }
     if (status === 403) {
+      if (silentAuthFailure) {
+        handleSessionExpired(false);
+        return true;
+      }
+
       alert("권한이 없어 요청이 거부되었습니다. 문의사항은 오픈 채팅을 통해 문의 부탁드립니다.");
       return true;
     }
@@ -403,7 +432,9 @@ export default function TeamPage() {
         headers: getAuthHeaders(false)
       });
       
-      if (handleApiError(res.status)) return;
+      if (handleApiError(res.status, { silentAuthFailure: true })) {
+        return;
+      }
       
       if (res.ok) {
         const data = await res.json();
@@ -433,11 +464,19 @@ export default function TeamPage() {
       setIconVersion(version);
       
       const loadSummoners = async () => {
-        const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const loggedIn = isStoredLoginActive();
         setIsLoggedIn(loggedIn);
         
         if (loggedIn) {
           await fetchSummoners();
+          const stillLoggedIn = isStoredLoginActive();
+          setIsLoggedIn(stillLoggedIn);
+
+          if (!stillLoggedIn) {
+            setLoading(false);
+            return;
+          }
+
           // 로그인 시 팀 목록 초기화
           setTeam1List([]);
           setTeam2List([]);

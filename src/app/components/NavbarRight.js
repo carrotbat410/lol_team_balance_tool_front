@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { clearAuthState, isStoredLoginActive } from '../utils/auth';
 
 export default function NavbarRight() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -10,11 +11,11 @@ export default function NavbarRight() {
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+      setIsLoggedIn(isStoredLoginActive());
     }
 
     const syncLoginState = () => {
-      setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+      setIsLoggedIn(isStoredLoginActive());
     };
 
     window.addEventListener('storage', syncLoginState);
@@ -27,8 +28,7 @@ export default function NavbarRight() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('username');
+    clearAuthState();
     localStorage.removeItem('team1List');
     localStorage.removeItem('team2List');
     localStorage.removeItem('noTeamList');
