@@ -51,6 +51,18 @@ services:
         NEXT_PUBLIC_API_URL: /api
     container_name: lol-front
     restart: unless-stopped
+    user: "1001:1001"
+    read_only: true
+    init: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
     ports:
       - "127.0.0.1:13000:3000"
     networks:
