@@ -27,6 +27,7 @@ export const clearAuthState = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("username");
+    localStorage.removeItem("role");
   }
 
   if (typeof document !== "undefined") {

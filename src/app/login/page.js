@@ -31,6 +31,7 @@ export default function LoginPage() {
         document.cookie = `token=${data.token}; path=/;`;
         // username을 localStorage에 저장
         localStorage.setItem("username", data.username);
+        localStorage.setItem("role", data.role || "");
         localStorage.setItem("isLoggedIn", "true");
         window.dispatchEvent(new Event("auth-change"));
         router.push("/");

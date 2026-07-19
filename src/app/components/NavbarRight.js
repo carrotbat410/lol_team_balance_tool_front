@@ -7,15 +7,18 @@ import { clearAuthState, isStoredLoginActive } from '../utils/auth';
 
 export default function NavbarRight() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsLoggedIn(isStoredLoginActive());
+      setIsAdmin(localStorage.getItem('role') === 'ROLE_ADMIN');
     }
 
     const syncLoginState = () => {
       setIsLoggedIn(isStoredLoginActive());
+      setIsAdmin(localStorage.getItem('role') === 'ROLE_ADMIN');
     };
 
     window.addEventListener('storage', syncLoginState);
@@ -39,6 +42,9 @@ export default function NavbarRight() {
   if (isLoggedIn) {
     return (
       <>
+        {isAdmin && (
+          <Link href="/admin/visitors" className="admin-link">관리자</Link>
+        )}
         <Link href="/my-account" className="user-icon-btn">
           <Image src="/user-icon.png" alt="유저 아이콘" width={36} height={36} />
         </Link>

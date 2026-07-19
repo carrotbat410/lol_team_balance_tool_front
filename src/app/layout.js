@@ -2,6 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 import NavbarRight from "./components/NavbarRight";
 import LogoLink from "./components/LogoLink";
+import VisitTracker from "./components/VisitTracker";
 import { siteConfig } from "./site-config";
 
 export const metadata = {
@@ -53,6 +54,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <body>
+        <VisitTracker />
         <div className="logo-wrap container">
           <LogoLink />
         </div>
