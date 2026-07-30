@@ -10,6 +10,31 @@ const formatDateLabel = (dateText) => {
   return `${Number(month)}/${Number(day)}`;
 };
 
+const formatKoreanDateTime = (dateTimeText) => {
+  if (!dateTimeText) {
+    return "-";
+  }
+
+  const utcDate = new Date(`${dateTimeText}Z`);
+  if (Number.isNaN(utcDate.getTime())) {
+    return dateTimeText;
+  }
+
+  const parts = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(utcDate);
+  const value = (type) => parts.find((part) => part.type === type)?.value ?? "";
+
+  return `${value("year")}-${value("month")}-${value("day")} ${value("hour")}:${value("minute")}:${value("second")}`;
+};
+
 export default function AdminVisitorsPage() {
   const router = useRouter();
   const [summary, setSummary] = useState(null);
@@ -168,7 +193,7 @@ export default function AdminVisitorsPage() {
                   <td>{visitor.hitCount}</td>
                   <td>{visitor.firstVisitDate}</td>
                   <td>{visitor.lastVisitDate}</td>
-                  <td>{visitor.lastVisitedAt?.replace("T", " ")}</td>
+                  <td>{formatKoreanDateTime(visitor.lastVisitedAt)}</td>
                 </tr>
               ))
             )}

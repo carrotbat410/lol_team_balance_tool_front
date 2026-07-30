@@ -229,9 +229,132 @@ button, input, select, textarea {
   margin-bottom: 8px;
 }
 
-.team-page-intro p {
-  max-width: 780px;
+.team-page-intro-description {
+  max-width: none;
+}
+
+.team-page-intro-description p {
   color: #dbe4f0;
+}
+
+.team-page-intro-description p + p {
+  margin-top: 4px;
+}
+
+@media (min-width: 1200px) {
+  .team-page-intro-description p {
+    white-space: nowrap;
+  }
+}
+
+.guide-page {
+  padding-bottom: 56px;
+}
+
+.guide-hero {
+  margin: 20px 0 28px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(30, 41, 59, 0.92));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+}
+
+.guide-eyebrow {
+  margin-bottom: 8px;
+  color: #a3e635;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.guide-hero h1 {
+  margin-bottom: 12px;
+  color: #f8fafc;
+  font-size: 2.15rem;
+  font-weight: 800;
+}
+
+.guide-hero > p:not(.guide-eyebrow) {
+  max-width: 760px;
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.guide-start-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 22px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #44444a;
+  color: #fff;
+  font-weight: 700;
+}
+
+.guide-start-link:hover {
+  background: #565660;
+}
+
+.guide-steps {
+  display: grid;
+  gap: 22px;
+}
+
+.guide-step {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(360px, 1.35fr);
+  gap: 24px;
+  align-items: center;
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+  background: #23232b;
+}
+
+.guide-step-copy span {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: #93c5fd;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.guide-step-copy h2 {
+  margin-bottom: 18px;
+  color: #93c5fd;
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+
+.guide-step-copy p {
+  color: #fff;
+  line-height: 1.7;
+}
+
+.guide-step-lines span {
+  display: block;
+  color: #fff;
+}
+
+.guide-image-card {
+  overflow: hidden;
+  border: 1px solid #343440;
+  border-radius: 16px;
+  background: #1f1f27;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 18px 36px rgba(0, 0, 0, 0.18);
+}
+
+.guide-step-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 900px) {
+  .guide-step {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 로그인 페이지 스타일 */
@@ -1108,7 +1231,7 @@ button, input, select, textarea {
 .admin-chart {
   display: grid;
   grid-template-columns: repeat(30, minmax(20px, 1fr));
-  align-items: end;
+  align-items: flex-end;
   gap: 8px;
   min-height: 260px;
   overflow-x: auto;

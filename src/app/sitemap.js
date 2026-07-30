@@ -1,6 +1,6 @@
 import { siteConfig } from "./site-config";
 
-const routes = ["", "/team-balancer", "/community", "/login", "/signup"];
+const routes = ["/team-balancer", "/team-balancer/guide", "/community"];
 
 export default function sitemap() {
   const lastModified = new Date();
@@ -8,7 +8,7 @@ export default function sitemap() {
   return routes.map((route) => ({
     url: `${siteConfig.url}${route}`,
     lastModified,
-    changeFrequency: route === "/team-balancer" ? "weekly" : "monthly",
-    priority: route === "/team-balancer" ? 1 : 0.6,
+    changeFrequency: route.startsWith("/team-balancer") ? "weekly" : "monthly",
+    priority: route === "/team-balancer" ? 1 : 0.7,
   }));
 }
