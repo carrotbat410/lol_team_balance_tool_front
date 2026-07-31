@@ -103,7 +103,7 @@ export default function MyAccountPage() {
         ) : (
           <form className="delete-account-form" onSubmit={handleDeleteAccount}>
             <h2>회원 탈퇴</h2>
-            <p>탈퇴하면 계정과 등록한 소환사 정보가 삭제됩니다. 방문자 통계는 익명 기록으로 유지됩니다.</p>
+            <p>탈퇴하면 계정과 등록한 소환사 정보가 삭제됩니다.</p>
             <label htmlFor="delete-password">현재 비밀번호</label>
             <input
               id="delete-password"
