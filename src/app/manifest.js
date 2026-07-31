@@ -17,9 +17,15 @@ export default function manifest() {
         type: "image/x-icon",
       },
       {
-        src: "/logo.webp",
-        sizes: "512x512",
-        type: "image/webp",
+        src: "/favicon.png",
+        sizes: "1254x1254",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
       },
     ],
   };
