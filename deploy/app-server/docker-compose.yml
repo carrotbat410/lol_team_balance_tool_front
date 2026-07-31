@@ -26,8 +26,7 @@ services:
       - app-net
 
   lol-back:
-    build:
-      context: /home/ubuntu/src/lol_team_balance_tool_back
+    image: ${LOL_BACK_IMAGE:-ghcr.io/carrotbat410/lol-team-balance-tool-back:latest}
     container_name: lol-back
     restart: unless-stopped
     depends_on:
@@ -47,10 +46,7 @@ services:
       - app-net
 
   lol-front:
-    build:
-      context: /home/ubuntu/src/lol_team_balance_tool_front2
-      args:
-        NEXT_PUBLIC_API_URL: /api
+    image: ${LOL_FRONT_IMAGE:-ghcr.io/carrotbat410/lol-team-balance-tool-front:latest}
     container_name: lol-front
     restart: unless-stopped
     user: "1001:1001"
