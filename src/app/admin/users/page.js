@@ -15,24 +15,13 @@ const formatKoreanDateTime = (dateTimeText) => {
     return "기록 없음";
   }
 
-  const date = new Date(`${dateTimeText}Z`);
-  if (Number.isNaN(date.getTime())) {
+  const normalizedDateTime = dateTimeText.replace("T", " ");
+  const match = normalizedDateTime.match(/^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})/);
+  if (!match) {
     return dateTimeText;
   }
 
-  const parts = new Intl.DateTimeFormat("ko-KR", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).formatToParts(date);
-  const value = (type) => parts.find((part) => part.type === type)?.value ?? "";
-
-  return `${value("year")}-${value("month")}-${value("day")} ${value("hour")}:${value("minute")}:${value("second")}`;
+  return `${match[1]} ${match[2]}`;
 };
 
 export default function AdminUsersPage() {
