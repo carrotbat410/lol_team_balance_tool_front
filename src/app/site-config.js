@@ -20,7 +20,7 @@ export const siteConfig = {
     "내전 도우미",
   ],
   navLinks: [
-    { url: "/team-balancer", name: "팀 밸런서" },
-    { url: "/community", name: "커뮤니티" },
+    { url: "/team-balancer", name: "팀짜기" },
+    { url: "/team-balancer/guide", name: "팀짜기 사용법" },
   ],
 };

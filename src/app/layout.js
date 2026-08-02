@@ -2,6 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 import NavbarRight from "./components/NavbarRight";
 import LogoLink from "./components/LogoLink";
+import NavMenu from "./components/NavMenu";
 import VisitTracker from "./components/VisitTracker";
 import { siteConfig } from "./site-config";
 
@@ -63,11 +64,7 @@ export default function RootLayout({ children }) {
         </div>
         <nav className="navbar container">
           <div className="navbar-inner">
-            <ul className="nav-menu">
-              <li><Link href="/team-balancer">팀짜기</Link></li>
-              <li><Link href="/team-balancer/guide">팀짜기 사용법</Link></li>
-              <li><Link href="/community">커뮤니티</Link></li>
-            </ul>
+            <NavMenu />
             <div className="nav-right">
               <NavbarRight />
             </div>

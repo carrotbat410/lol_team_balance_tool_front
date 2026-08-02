@@ -65,8 +65,10 @@ export default function AdminVisitorsPage() {
         }
 
         if (response.status === 403) {
+          clearAuthState();
+          setError("관리자 권한이 필요합니다. 로그아웃 후 관리자 계정으로 다시 로그인해주세요.");
           alert("관리자 권한이 필요합니다.");
-          router.push("/");
+          router.push("/login");
           return;
         }
 
@@ -109,6 +111,15 @@ export default function AdminVisitorsPage() {
       <section className="admin-page">
         <h1>방문자 통계</h1>
         <p className="admin-error">{error}</p>
+      </section>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <section className="admin-page">
+        <h1>방문자 통계</h1>
+        <p className="admin-error">방문자 통계 데이터를 불러오지 못했습니다.</p>
       </section>
     );
   }

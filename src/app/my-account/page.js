@@ -40,7 +40,7 @@ export default function MyAccountPage() {
       return;
     }
 
-    const confirmed = window.confirm('정말 회원 탈퇴를 진행할까요? 계정과 등록한 소환사 정보가 삭제됩니다.');
+    const confirmed = window.confirm('정말 회원 탈퇴를 진행할까요? 계정, 등록한 소환사 정보, 작성한 게시글과 댓글이 삭제됩니다.');
     if (!confirmed) {
       return;
     }
@@ -103,7 +103,7 @@ export default function MyAccountPage() {
         ) : (
           <form className="delete-account-form" onSubmit={handleDeleteAccount}>
             <h2>회원 탈퇴</h2>
-            <p>탈퇴하면 계정과 등록한 소환사 정보가 삭제됩니다.</p>
+            <p>탈퇴하면 계정, 등록한 소환사 정보, 작성한 게시글과 댓글이 삭제됩니다.</p>
             <label htmlFor="delete-password">현재 비밀번호</label>
             <input
               id="delete-password"

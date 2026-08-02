@@ -1,6 +1,6 @@
 import { siteConfig } from "./site-config";
 
-const routes = ["/team-balancer", "/team-balancer/guide", "/community"];
+const routes = ["/team-balancer", "/team-balancer/guide"];
 
 export default function sitemap() {
   const lastModified = new Date();
