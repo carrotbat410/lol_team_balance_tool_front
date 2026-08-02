@@ -58,6 +58,7 @@ services:
       - no-new-privileges:true
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=64m
+      - /app/.next/cache:rw,noexec,nosuid,nodev,size=64m
     pids_limit: 128
     mem_limit: 512m
     cpus: 1.0
