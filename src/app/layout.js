@@ -4,6 +4,7 @@ import NavbarRight from "./components/NavbarRight";
 import LogoLink from "./components/LogoLink";
 import NavMenu from "./components/NavMenu";
 import VisitTracker from "./components/VisitTracker";
+import KakaoSideAds from "./components/KakaoSideAds";
 import { siteConfig } from "./site-config";
 
 export const metadata = {
@@ -59,6 +60,7 @@ export default function RootLayout({ children }) {
     <html lang="ko">
       <body>
         <VisitTracker />
+        <KakaoSideAds />
         <div className="logo-wrap container">
           <LogoLink />
         </div>

@@ -215,6 +215,29 @@ button, input, select, textarea {
   background: #23232b;
 }
 
+.kakao-side-ad {
+  position: fixed;
+  top: 180px;
+  z-index: 20;
+  width: 160px;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.kakao-side-ad-left {
+  left: max(16px, calc((100vw - 1200px) / 2 - 188px));
+}
+
+.kakao-side-ad-right {
+  right: max(16px, calc((100vw - 1200px) / 2 - 188px));
+}
+
+@media (max-width: 1580px) {
+  .kakao-side-ad {
+    display: none;
+  }
+}
+
 .team-page-intro {
   margin-bottom: 20px;
   padding: 20px 24px;
