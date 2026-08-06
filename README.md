@@ -29,6 +29,3 @@
 
 ## ⚙ 서비스 아키텍처
 <img width="1800" height="1180" alt="lol-civilwar-helper-architecture" src="https://github.com/user-attachments/assets/1951d64a-8043-4f2a-893b-85834914c816" />
-
-## 📁 ERD
-<img width="944" height="872" alt="lol-civilwar-helper-erd" src="https://github.com/user-attachments/assets/6534b190-771f-45ea-895a-190d21a24d69" />
