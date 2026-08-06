@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## 🔗 프로젝트 관련 링크
+> <a href="https://lolcivilwarhelper.kro.kr/team-balancer" target="_blank">서비스 URL(운영중)</a>
+- <a href="https://github.com/carrotbat410/lol_team_balance_tool_back" target="_blank">백엔드 Repo</a>
 
-## Getting Started
+<br></br>
 
-First, run the development server:
+## 💻 프로젝트 소개
+> 롤 내전 도우미 Ver.2 (FrontEnd)
+>
+> 롤 내전 도우미에서 소환사를 추가하고 드래그앤드롭으로 팀을 배치해보세요!
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+<img width="1710" height="865" alt="롤 내전 도우미 메인 화면" src="https://github.com/user-attachments/assets/bd96829e-3325-43f2-9574-e53d474918eb" />
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- 롤 내전 게임 시, 참가자를 추가하고 티어 기반으로 균형 있는 팀 결과를 확인할 수 있는 서비스입니다.
+- 라이엇 API로 조회된 소환사 정보를 화면에 표시하고, 드래그앤드롭으로 팀 배치를 조정할 수 있습니다.
+- 팀짜기 사용법, 커뮤니티, 관리자 페이지, 방문자 통계 화면을 제공합니다.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 📚 기술 스택
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| 기술 | 설명 |
+|---|---|
+| `Next.js 15.5.20` | React 기반 프론트엔드 애플리케이션 구성 |
+| `Fetch API` | Spring Boot 백엔드 REST API 호출 |
+| `JWT` | 로그인 토큰 기반 인증 상태 관리 |
+| `Cookie / localStorage` | 로그인 상태, 권한, 방문자 ID, 팀 배치 정보 저장 |
+| `Docker`, `Docker Compose` | 프론트엔드, 백엔드, MySQL 컨테이너 통합 운영 |
+| `GitHub Actions` | CI/CD 자동화 |
+| `GHCR` | Docker 이미지 저장소 |
 
-## Learn More
+## ⚙ 서비스 아키텍처
+<img width="1800" height="1180" alt="lol-civilwar-helper-architecture" src="https://github.com/user-attachments/assets/1951d64a-8043-4f2a-893b-85834914c816" />
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📁 ERD
+<img width="944" height="872" alt="lol-civilwar-helper-erd" src="https://github.com/user-attachments/assets/6534b190-771f-45ea-895a-190d21a24d69" />
