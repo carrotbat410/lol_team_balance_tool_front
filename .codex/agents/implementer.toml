@@ -1,4 +1,4 @@
-name = "implementer"
+name = "Implementer"
 description = "Implementation worker that changes code only within a human-approved plan and reports verification evidence."
 sandbox_mode = "workspace-write"
 

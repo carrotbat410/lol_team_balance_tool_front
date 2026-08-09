@@ -1,4 +1,4 @@
-name = "planner"
+name = "Planner"
 description = "Read-only planner that converts a user request and research report into an approval-ready implementation plan."
 sandbox_mode = "read-only"
 

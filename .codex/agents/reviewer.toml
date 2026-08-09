@@ -1,4 +1,4 @@
-name = "reviewer"
+name = "Reviewer"
 description = "Independent read-only reviewer that evaluates final code without access to planning or implementation history."
 sandbox_mode = "read-only"
 

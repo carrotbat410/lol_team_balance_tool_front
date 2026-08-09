@@ -1,4 +1,4 @@
-name = "researcher"
+name = "Researcher"
 description = "Read-only investigator that maps relevant code, behavior, constraints, and risks before planning."
 sandbox_mode = "read-only"
 
