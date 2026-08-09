@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0",
+  "installation_base_commit": "5c333fdb8fa8a1e2a70a856bb43cdbe65bac3773",
+  "python_minimum": [3, 11],
+  "hook": {
+    "events": [
+      "UserPromptSubmit",
+      "SubagentStart",
+      "SubagentStop",
+      "Stop",
+      "SessionEnd"
+    ],
+    "commands": [
+      "python3 \"$(git rev-parse --show-toplevel)/scripts/ai_harness/hook_logger.py\""
+    ],
+    "handler_types": ["command"],
+    "max_timeout_seconds": 3,
+    "allowed_log_fields": [
+      "schema_version",
+      "timestamp",
+      "run_id",
+      "turn_id",
+      "event",
+      "role",
+      "stage",
+      "status",
+      "git_commit",
+      "policy_digest",
+      "template_manifest_digest",
+      "verification_exit_status"
+    ]
+  },
+  "runtime": {
+    "root": ".ai-runtime",
+    "retention_days": 30,
+    "retention_targets": ["logs", "prompt-history", "reports", "reviewer-packets"],
+    "state_lifetime": "local-installation",
+    "max_jsonl_bytes": 5242880,
+    "directory_mode": "0700",
+    "file_mode": "0600"
+  },
+  "roles": {
+    "researcher": {
+      "display_name": "Researcher",
+      "contract": ".codex/agents/researcher.toml",
+      "template": ".agents/prompts/researcher.md",
+      "sandbox_mode": "read-only"
+    },
+    "planner": {
+      "display_name": "Planner",
+      "contract": ".codex/agents/planner.toml",
+      "template": ".agents/prompts/planner.md",
+      "sandbox_mode": "read-only"
+    },
+    "implementer": {
+      "display_name": "Implementer",
+      "contract": ".codex/agents/implementer.toml",
+      "template": ".agents/prompts/implementer.md",
+      "sandbox_mode": "workspace-write"
+    },
+    "reviewer": {
+      "display_name": "Reviewer",
+      "contract": ".codex/agents/reviewer.toml",
+      "template": ".agents/prompts/reviewer.md",
+      "sandbox_mode": "read-only"
+    }
+  },
+  "prompt_history": {
+    "forbidden_keys": [
+      "analysis",
+      "reasoning",
+      "chain_of_thought",
+      "chain-of-thought",
+      "transcript",
+      "transcript_path",
+      "messages",
+      "tool_output",
+      "tool_response",
+      "command_output",
+      "raw_prompt",
+      "last_assistant_message"
+    ],
+    "redaction_types": [
+      "private_key",
+      "jwt",
+      "secret_assignment",
+      "secret_field",
+      "email",
+      "phone",
+      "absolute_user_path"
+    ]
+  },
+  "workflow": {
+    "role_order": ["researcher", "planner", "human_approval", "implementer", "reviewer"],
+    "fix_review_limit": 2,
+    "require_distinct_context_digests": true,
+    "require_reapproval_on_scope_change": true,
+    "reviewer_packet_allowed_fields": [
+      "original_request",
+      "acceptance_criteria",
+      "review_rules",
+      "task_diff",
+      "final_source_references",
+      "verification"
+    ],
+    "reviewer_packet_forbidden_fields": [
+      "researcher",
+      "planner",
+      "implementer",
+      "implementation_conversation",
+      "rationale",
+      "runtime_logs"
+    ]
+  },
+  "bootstrap": {
+    "allowed": true,
+    "base_commit": "5c333fdb8fa8a1e2a70a856bb43cdbe65bac3773",
+    "attestation": ".agents/ai-harness/attestations/bootstrap.json",
+    "retroactive_hook_logs": false
+  },
+  "verification": {
+    "commands": {
+      "base_ancestor": {
+        "argv": ["git", "merge-base", "--is-ancestor", "{base_commit}", "HEAD"],
+        "stdout_must_be_empty": true,
+        "trusted_pr_safe": true
+      },
+      "git_diff_check": {
+        "argv": ["git", "diff", "--check"],
+        "stdout_must_be_empty": true,
+        "trusted_pr_safe": true
+      },
+      "runtime_untracked": {
+        "argv": ["git", "ls-files", ".ai-runtime/**"],
+        "stdout_must_be_empty": true,
+        "trusted_pr_safe": true
+      },
+      "unit_tests": {
+        "argv": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "scripts/ai_harness/tests",
+          "-p",
+          "test_*.py"
+        ],
+        "stdout_must_be_empty": false,
+        "trusted_pr_safe": false
+      }
+    },
+    "profiles": {
+      "bootstrap": ["git_diff_check", "runtime_untracked", "unit_tests"],
+      "workflow": ["base_ancestor", "git_diff_check", "runtime_untracked", "unit_tests"]
+    }
+  }
+}

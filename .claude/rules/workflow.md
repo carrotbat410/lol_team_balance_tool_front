@@ -5,3 +5,6 @@
 - 배포 파일을 수정하면 `deploy/app-server/docker-compose.yml` 과 `deploy/app-server/nginx/default.conf` 를 함께 확인합니다.
 - 서버 관련 값은 코드에 직접 박지 말고 build arg 또는 환경변수 흐름을 유지합니다.
 - 큰 구조 변경이 아니면 전체 프로젝트를 뒤흔드는 정리는 하지 않습니다.
+- AI 코드 변경은 @.agents/skills/lol-ai-workflow/SKILL.md 순서를 따르고, human approval 전에는 Implementer를 시작하지 않습니다.
+- 역할 prompt는 @.agents/prompts/manifest.json의 template과 정제된 canonical envelope로 렌더링합니다.
+- Reviewer에게는 @docs/ai-harness.md의 blind packet 허용 항목만 전달하고 최종 attestation을 검증합니다.

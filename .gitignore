@@ -12,6 +12,9 @@
 
 # testing
 /coverage
+/.ai-runtime/
+__pycache__/
+*.py[cod]
 
 # next.js
 /.next/

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lol-civil-war-helper.local/schemas/prompt-record.schema.json",
+  "title": "Sanitized prompt history record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "created_at",
+    "role",
+    "contract_path",
+    "contract_sha256",
+    "template_path",
+    "template_sha256",
+    "envelope",
+    "envelope_sha256",
+    "rendered_prompt_sha256",
+    "redactions"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_id": {"type": "string", "pattern": "^[0-9a-f]{24}$"},
+    "created_at": {"type": "string"},
+    "role": {"enum": ["researcher", "planner", "implementer", "reviewer"]},
+    "contract_path": {"type": "string"},
+    "contract_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "template_path": {"type": "string"},
+    "template_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "envelope": {"$ref": "task-envelope.schema.json"},
+    "envelope_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "rendered_prompt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "redactions": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
+  }
+}

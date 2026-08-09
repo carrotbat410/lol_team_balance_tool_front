@@ -18,6 +18,7 @@ Run the main thread as the Coordinator. Never simulate independent roles in the 
 - Record the original user request verbatim enough to preserve its acceptance intent.
 - Capture the existing Git status and distinguish pre-existing user changes from task changes. Never revert or include unrelated work.
 - Classify the initial risk as low, medium, or high. Treat database, authentication, authorization, secrets, infrastructure, deployment, destructive actions, and production changes as high risk.
+- Create a sanitized canonical task envelope with `scripts/ai_harness/prompt_history.py`; never persist the raw prompt, transcript, reasoning, or tool/command input and output.
 
 ## 2. Delegate research
 
@@ -25,6 +26,7 @@ Run the main thread as the Coordinator. Never simulate independent roles in the 
 - Send only the original request, repository location, baseline state, and relevant known constraints.
 - Wait for its report. Keep raw exploration noise out of the main thread.
 - Verify that the report distinguishes evidence from inference.
+- Render the Researcher prompt from `.agents/prompts/manifest.json` and retain only its sanitized prompt record and digests under `.ai-runtime`.
 
 ## 3. Delegate planning
 
@@ -32,6 +34,7 @@ Run the main thread as the Coordinator. Never simulate independent roles in the 
 - Send the original request, acceptance intent, baseline state, and Researcher report.
 - Require an approval-ready plan with scope, files, ordered steps, risks, verification, and rollback.
 - Do not let the Planner edit files or contact the Implementer.
+- Use a role-specific prompt record; do not reuse the Researcher context digest.
 
 ## 4. Apply the human approval gate
 
@@ -39,6 +42,7 @@ Run the main thread as the Coordinator. Never simulate independent roles in the 
 - Stop before implementation and wait for explicit approval or requested revisions.
 - Treat approval as applying only to the presented scope. Route revisions back through a fresh or continued planning pass as appropriate.
 - Do not make the user copy the plan between threads. The Coordinator owns all routing.
+- Record a sanitized approved-scope object with both the approval summary and explicit repository-relative `scope_paths`. Any scope text or path change requires another human approval event.
 
 ## 5. Delegate implementation
 
@@ -47,6 +51,7 @@ Run the main thread as the Coordinator. Never simulate independent roles in the 
 - Do not send hidden planning discussion or unrelated context.
 - Require the Implementer to preserve existing changes, stay within scope, and return changed files plus verification evidence.
 - If implementation discovers an unapproved high-risk expansion, return to the human approval gate.
+- Refuse to start or attest the Implementer before a valid approval event.
 
 ## 6. Build a blind review packet
 
@@ -61,6 +66,8 @@ Create a minimal packet containing only:
 
 Exclude Researcher notes, Planner output, Implementer prompts, implementation conversation, attempts, rationale, and AI work logs.
 
+Generate the exact sanitized packet copy with `prepare-reviewer-packet`, deliver that same copy, and digest it with `scripts/ai_harness/workflow_attestation.py`; do not store packet bodies in the tracked attestation.
+
 ## 7. Delegate independent review
 
 - Spawn a fresh `reviewer` subagent in read-only mode.
@@ -73,9 +80,14 @@ Exclude Researcher notes, Planner output, Implementer prompts, implementation co
 - If material findings exist, send only the actionable findings and approved scope to the Implementer.
 - After fixes, build a new blind review packet and use a fresh Reviewer pass.
 - Limit automatic fix-review loops to two. Escalate unresolved conflicts or scope changes to the user.
+- Use a fresh context digest for every fix and review pass.
+- Any source change after a Reviewer event requires a new Implementer pass and a fresh blind Reviewer packet/event.
 
 ## 9. Close the task
 
 - Report implemented behavior, review outcome, verification, and residual risks.
 - Commit, push, deploy, mutate production, or delete data only when the user explicitly requests it.
 - Never claim independent review if a fresh Reviewer subagent was unavailable. State the limitation clearly.
+- Finalize the workflow attestation and run `npm run ai:harness:check` before reporting completion.
+- Record verification only through `run-verification`; never accept a caller-supplied exit status.
+- Treat attestation as a structural consistency statement, not cryptographic proof that a human or independent Reviewer performed an action.

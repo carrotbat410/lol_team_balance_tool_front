@@ -7,4 +7,6 @@
 - Prefer referencing existing docs with `@filename` instead of duplicating long explanations.
 - For feature development, bug fixes, refactoring, database, security, or deployment changes, use `$lol-ai-workflow` to run Researcher, Planner, human approval, Implementer, and blind Reviewer stages.
 - The Coordinator routes outputs between subagents. The user approves the plan but never has to copy it between threads.
+- AI 작업의 정제된 prompt history, workflow attestation, lifecycle log 정책은 @docs/ai-harness.md 와 @.agents/ai-harness/policy.json 을 따릅니다.
+- AI harness 또는 CI workflow를 변경했다면 `npm run ai:harness:check`를 통과시킵니다.
 - Commit, push, and deploy only when the user explicitly requests them.

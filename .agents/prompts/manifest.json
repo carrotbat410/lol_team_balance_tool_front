@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "roles": {
+    "researcher": {
+      "template": ".agents/prompts/researcher.md",
+      "agent_contract": ".codex/agents/researcher.toml",
+      "contract_sha256": "92a0b90c4f099c07ba3a14a79f4e7ac236339453cbd16e29bd24ef2464329b9c",
+      "sha256": "1b9607dd2d8607c5459ca2ea16cb4cc70a57067c0397fd74a1d898722d097053"
+    },
+    "planner": {
+      "template": ".agents/prompts/planner.md",
+      "agent_contract": ".codex/agents/planner.toml",
+      "contract_sha256": "2b952fd292bb36dc4adf89c00d7edfd86cd56bcaa766b9ddb9eb07542eb3f12b",
+      "sha256": "58cefb0d3c87c478861e8f87528789ffd5e6ebd0220158074279ac292612492c"
+    },
+    "implementer": {
+      "template": ".agents/prompts/implementer.md",
+      "agent_contract": ".codex/agents/implementer.toml",
+      "contract_sha256": "f5ff814704cdb59c50abe4d821e0b9fc6a705391f6acd14459c165c807cbc366",
+      "sha256": "fe521d50a323577fa651591ecf384ac547cb570f11bd00b5dec048bfde63f614"
+    },
+    "reviewer": {
+      "template": ".agents/prompts/reviewer.md",
+      "agent_contract": ".codex/agents/reviewer.toml",
+      "contract_sha256": "912c6a7cbcfae4179650ef83e0613737df12ae73a19b3fbf6ea6b0dfba503429",
+      "sha256": "811c34eafe86bc6a559c573ba0731a9043e040b61ea64e5f394265a6693fd5be"
+    }
+  }
+}

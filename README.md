@@ -29,3 +29,7 @@
 
 ## ⚙ 서비스 아키텍처
 <img width="1800" height="1180" alt="lol-civilwar-helper-architecture" src="https://github.com/user-attachments/assets/1951d64a-8043-4f2a-893b-85834914c816" />
+
+## AI 개발 하네스
+
+이 저장소의 조사 → 계획 → 사용자 승인 → 구현 → 독립 리뷰 흐름은 lifecycle metadata logging, 정제된 prompt history, workflow attestation과 CI gate로 검증합니다. 설치·신뢰 승인·데이터 보존·사용 명령·한계·롤백은 @docs/ai-harness.md를 참고하세요.

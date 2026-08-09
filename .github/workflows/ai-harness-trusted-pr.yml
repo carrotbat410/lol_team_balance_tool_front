@@ -1,0 +1,77 @@
+name: AI harness trusted PR gate
+
+on:
+  pull_request_target:
+
+permissions:
+  contents: read
+
+jobs:
+  trusted-harness-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 신뢰 기준 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: PR head 정적 검사 대상 체크아웃
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 검증 기준 커밋 결정
+        id: baseline
+        continue-on-error: true
+        working-directory: candidate
+        shell: bash
+        run: |
+          base_commit="${{ github.event.pull_request.base.sha }}"
+          git cat-file -e "${base_commit}^{commit}"
+          git merge-base --is-ancestor "$base_commit" HEAD
+          echo "base=$base_commit" >> "$GITHUB_OUTPUT"
+
+      - name: 신뢰 기준 validator로 PR 정적 검증
+        id: validation
+        if: steps.baseline.outcome == 'success'
+        continue-on-error: true
+        working-directory: trusted
+        run: >-
+          python3 scripts/ai_harness/validate.py --mode trusted-pr
+          --root "$GITHUB_WORKSPACE/candidate"
+          --base "${{ steps.baseline.outputs.base }}"
+          --report .ai-runtime/reports/ai-harness-report.json
+
+      - name: 기준 실패 보고서 생성
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p candidate/.ai-runtime/reports
+          if [[ ! -f candidate/.ai-runtime/reports/ai-harness-report.json ]]; then
+            printf '%s\n' '{"schema_version":"1.0","mode":"trusted-pr-fallback","base_commit":"unresolved","status":"failed","exit_status":1,"checks":[{"name":"baseline-or-validator","status":"failed"}],"failed_check_names":["baseline-or-validator"]}' > candidate/.ai-runtime/reports/ai-harness-report.json
+          fi
+
+      - name: 본문 없는 신뢰 검증 보고서 보존
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-harness-trusted-pr-report
+          path: candidate/.ai-runtime/reports/ai-harness-report.json
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: 신뢰 검증 실패 반영
+        if: always() && (steps.baseline.outcome != 'success' || steps.validation.outcome != 'success')
+        run: exit 1

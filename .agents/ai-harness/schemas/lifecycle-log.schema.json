@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lol-civil-war-helper.local/schemas/lifecycle-log.schema.json",
+  "title": "Sanitized lifecycle metadata event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "timestamp",
+    "run_id",
+    "turn_id",
+    "event",
+    "role",
+    "stage",
+    "status",
+    "git_commit",
+    "policy_digest",
+    "template_manifest_digest",
+    "verification_exit_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "timestamp": {"type": "string"},
+    "run_id": {"type": "string", "pattern": "^[0-9a-f]{24}$"},
+    "turn_id": {"type": "string", "pattern": "^[0-9a-f]{24}$"},
+    "event": {"enum": ["UserPromptSubmit", "SubagentStart", "SubagentStop", "Stop", "SessionEnd"]},
+    "role": {"enum": ["Coordinator", "Researcher", "Planner", "Implementer", "Reviewer", "Unknown"]},
+    "stage": {"type": "string"},
+    "status": {"enum": ["submitted", "started", "completed", "stopped", "ended"]},
+    "git_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "template_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "verification_exit_status": {"type": ["integer", "null"]}
+  }
+}

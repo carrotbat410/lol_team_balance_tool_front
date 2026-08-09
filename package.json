@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "ai:harness:test": "python3 -m unittest discover -s scripts/ai_harness/tests -p 'test_*.py'",
+    "ai:harness:check": "npm run ai:harness:test && python3 scripts/ai_harness/validate.py --mode local --report .ai-runtime/reports/ai-harness-report.json"
   },
   "dependencies": {
     "next": "15.5.20",

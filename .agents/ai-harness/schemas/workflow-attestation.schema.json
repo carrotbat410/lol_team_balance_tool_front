@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lol-civil-war-helper.local/schemas/workflow-attestation.schema.json",
+  "title": "AI workflow attestation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "attestation_id",
+    "base_commit",
+    "task_id",
+    "task_diff_digest",
+    "policy_digest",
+    "prompt_manifest_digest",
+    "integrity_manifest_digest",
+    "approved_scope_digest",
+    "approved_scope_paths",
+    "approved_scope_paths_digest",
+    "events",
+    "reviewer_packet",
+    "verification",
+    "bootstrap"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "kind": {"enum": ["workflow", "bootstrap"]},
+    "attestation_id": {"type": "string", "pattern": "^[0-9a-f]{24}$"},
+    "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "task_id": {"type": "string"},
+    "task_diff_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "policy_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "prompt_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "integrity_manifest_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "approved_scope_digest": {"type": ["string", "null"]},
+    "approved_scope_paths": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string"}
+    },
+    "approved_scope_paths_digest": {"type": ["string", "null"]},
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sequence",
+          "stage",
+          "status",
+          "context_digest",
+          "scope_digest",
+          "scope_paths_digest",
+          "prompt_scope_digest",
+          "task_diff_digest",
+          "round"
+        ],
+        "properties": {
+          "sequence": {"type": "integer", "minimum": 1},
+          "stage": {"enum": ["researcher", "planner", "human_approval", "implementer", "reviewer"]},
+          "status": {"enum": ["completed", "approved", "changes_requested"]},
+          "context_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "scope_digest": {"type": ["string", "null"]},
+          "scope_paths_digest": {"type": ["string", "null"]},
+          "prompt_scope_digest": {"type": ["string", "null"]},
+          "task_diff_digest": {"type": ["string", "null"]},
+          "round": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "reviewer_packet": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["field_digests", "packet_digest", "task_diff_digest"],
+          "properties": {
+            "field_digests": {"type": "object"},
+            "packet_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "task_diff_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          }
+        }
+      ]
+    },
+    "verification": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "command_id",
+          "argv_digest",
+          "exit_status",
+          "result_digest",
+          "base_commit",
+          "task_diff_digest"
+        ],
+        "properties": {
+          "command_id": {"type": "string"},
+          "argv_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "exit_status": {"type": "integer"},
+          "result_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "task_diff_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "bootstrap": {"type": ["object", "null"]}
+  }
+}

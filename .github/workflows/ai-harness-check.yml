@@ -1,0 +1,78 @@
+name: AI harness check
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      base_commit:
+        description: "검증할 변경 범위의 기준 commit SHA"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  harness-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python 3.11 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 검증 기준 커밋 결정
+        id: baseline
+        continue-on-error: true
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_commit="${{ github.event.pull_request.base.sha }}"
+          else
+            base_commit="${{ inputs.base_commit }}"
+          fi
+          git cat-file -e "${base_commit}^{commit}"
+          git merge-base --is-ancestor "$base_commit" HEAD
+          echo "base=$base_commit" >> "$GITHUB_OUTPUT"
+
+      - name: AI harness 단위 테스트
+        id: unit-tests
+        continue-on-error: true
+        run: python3 -m unittest discover -s scripts/ai_harness/tests -p 'test_*.py'
+
+      - name: AI harness 정책 검증
+        id: validation
+        if: steps.baseline.outcome == 'success'
+        continue-on-error: true
+        run: >-
+          python3 scripts/ai_harness/validate.py --mode ci
+          --base "${{ steps.baseline.outputs.base }}"
+          --report .ai-runtime/reports/ai-harness-report.json
+
+      - name: 기준 실패 보고서 생성
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p .ai-runtime/reports
+          if [[ ! -f .ai-runtime/reports/ai-harness-report.json ]]; then
+            printf '%s\n' '{"schema_version":"1.0","mode":"ci-fallback","base_commit":"unresolved","status":"failed","exit_status":1,"checks":[{"name":"baseline-or-validator","status":"failed"}],"failed_check_names":["baseline-or-validator"]}' > .ai-runtime/reports/ai-harness-report.json
+          fi
+
+      - name: 본문 없는 검증 보고서 보존
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-harness-report
+          path: .ai-runtime/reports/ai-harness-report.json
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: 정책 검증 실패 반영
+        if: always() && (steps.baseline.outcome != 'success' || steps.unit-tests.outcome != 'success' || steps.validation.outcome != 'success')
+        run: exit 1

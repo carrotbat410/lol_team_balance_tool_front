@@ -1,0 +1,68 @@
+{
+  "description": "Sanitized repository-local AI lifecycle metadata logger.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/ai_harness/hook_logger.py\"",
+            "timeout": 3,
+            "statusMessage": "Recording sanitized lifecycle metadata"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "^(researcher|planner|implementer|reviewer)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/ai_harness/hook_logger.py\"",
+            "timeout": 3,
+            "statusMessage": "Recording sanitized lifecycle metadata"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "^(researcher|planner|implementer|reviewer)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/ai_harness/hook_logger.py\"",
+            "timeout": 3,
+            "statusMessage": "Recording sanitized lifecycle metadata"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/ai_harness/hook_logger.py\"",
+            "timeout": 3,
+            "statusMessage": "Recording sanitized lifecycle metadata"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "^other$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/ai_harness/hook_logger.py\"",
+            "timeout": 3,
+            "statusMessage": "Recording sanitized lifecycle metadata"
+          }
+        ]
+      }
+    ]
+  }
+}

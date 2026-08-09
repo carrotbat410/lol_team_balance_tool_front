@@ -24,7 +24,13 @@
 - 기본 빌드: `npm run build`
 - 로컬 개발: `npm run dev`
 - 린트: `npm run lint`
+- AI 하네스: `npm run ai:harness:check`
 - Docker 이미지 확인이 필요하면 `Dockerfile` 기준으로 앱 서버 compose 흐름을 봅니다.
+
+## AI 하네스
+- lifecycle hook, prompt history, workflow attestation의 사용법과 데이터 정책은 @docs/ai-harness.md를 따릅니다.
+- 역할 계약은 @.codex/agents/*.toml, tracked prompt template은 @.agents/prompts/manifest.json을 기준으로 하며 서로 복제하지 않습니다.
+- `.ai-runtime`의 로그·salt·prompt history·검증 report는 로컬 전용이며 Git에 추가하지 않습니다.
 
 ## 도메인 용어
 - 롤 내전 도우미: 메인 서비스 전체
