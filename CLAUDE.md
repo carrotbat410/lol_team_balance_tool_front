@@ -21,7 +21,8 @@
 4. 전체 테스트 대신 관련 검증만 우선 실행합니다.
 
 ## 검증 핵심
-- 기본 빌드: `npm run build`
+- 로컬 전체 빌드: 기본 생략. 라우팅, Next.js 설정, 의존성, Docker, 배포 변경 또는 사용자 요청 시 `npm run build`
+- 최종 빌드: GitHub Actions에서 검증
 - 로컬 개발: `npm run dev`
 - 린트: `npm run lint`
 - AI 하네스: `npm run ai:harness:check`
@@ -41,7 +42,8 @@
 - `/api`: 백엔드 프록시 경로
 
 ## 자주 하는 판단
-- 단순 UI 변경: `npm run lint` 또는 필요한 화면만 수동 확인
+- 문구/CSS/단순 UI 변경: 전체 빌드 없이 필요한 화면만 수동 확인하거나 관련 파일만 검사
+- 작은 JavaScript 로직 변경: 관련 검사나 테스트만 실행
 - 라우팅/렌더링 변경: `npm run build`
 - 배포 설정 변경: `docker-compose.yml`, nginx 설정, 프론트 빌드 인자를 같이 확인
 
