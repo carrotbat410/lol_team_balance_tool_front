@@ -22,6 +22,7 @@ from scripts.ai_harness.common import (  # noqa: E402
     POLICY_PATH,
     PROMPT_MANIFEST_PATH,
     REPO_ROOT,
+    REVIEWER_PACKET_MAX_BYTES,
     git_commit,
     git_output,
     load_policy,
@@ -140,6 +141,37 @@ EXPECTED_VERIFICATION_PROFILES = {
     "bootstrap": ["git_diff_check", "runtime_untracked", "unit_tests"],
     "workflow": ["base_ancestor", "git_diff_check", "runtime_untracked", "unit_tests"],
 }
+TRUSTED_PR_SAFE_COMMAND_IDS = frozenset(
+    command_id
+    for command_id, config in EXPECTED_VERIFICATION_COMMANDS.items()
+    if config["trusted_pr_safe"] is True
+)
+TRUSTED_PR_EXECUTION_POLICY = {
+    "verification": {
+        "commands": {
+            command_id: EXPECTED_VERIFICATION_COMMANDS[command_id]
+            for command_id in TRUSTED_PR_SAFE_COMMAND_IDS
+        },
+        "profiles": {
+            kind: [
+                command_id
+                for command_id in command_ids
+                if command_id in TRUSTED_PR_SAFE_COMMAND_IDS
+            ]
+            for kind, command_ids in EXPECTED_VERIFICATION_PROFILES.items()
+        },
+    }
+}
+EXPECTED_REVIEWER_PACKET_FIELDS = [
+    "original_request",
+    "acceptance_criteria",
+    "review_rules",
+    "task_diff",
+    "task_patch",
+    "final_source_references",
+    "verification",
+]
+EXPECTED_REVIEWER_PACKET_GENERATED_FIELDS = ["task_diff", "task_patch", "verification"]
 
 
 def validate_required_files(root: Path) -> None:
@@ -183,6 +215,15 @@ def validate_policy(policy: dict[str, Any]) -> None:
         raise HarnessError("runtime retention targets differ from the compiled allowlist")
     if runtime.get("state_lifetime") != "local-installation":
         raise HarnessError("state lifetime policy must remain separate from expiring runtime artifacts")
+    workflow = policy.get("workflow", {})
+    if workflow.get("reviewer_packet_allowed_fields") != EXPECTED_REVIEWER_PACKET_FIELDS:
+        raise HarnessError("Reviewer packet fields differ from the compiled allowlist")
+    if workflow.get("reviewer_packet_generated_fields") != EXPECTED_REVIEWER_PACKET_GENERATED_FIELDS:
+        raise HarnessError("Reviewer packet generated fields differ from the compiled allowlist")
+    if workflow.get("prepared_reviewer_packet_digest") != "required":
+        raise HarnessError("Reviewer packet prepared digest requirement was weakened")
+    if workflow.get("reviewer_packet_max_bytes") != REVIEWER_PACKET_MAX_BYTES:
+        raise HarnessError("Reviewer packet size limit differs from the compiled 2 MiB limit")
     verification = policy.get("verification", {})
     if verification.get("commands") != EXPECTED_VERIFICATION_COMMANDS:
         raise HarnessError("verification command definitions differ from the compiled allowlist")
@@ -669,18 +710,21 @@ def validate_current_attestation(root: Path, base_commit: str, mode: str) -> Non
     path = select_attestation(root, base_commit)
     policy = load_policy(root)
     rerun_ids: set[str] | None = None
+    execution_policy: dict[str, Any] | None = None
     if mode == "trusted-pr":
-        rerun_ids = {
-            command_id
-            for command_id, config in policy["verification"]["commands"].items()
-            if config.get("trusted_pr_safe") is True
-        }
+        # These checks run in trusted base code and must pass before any candidate
+        # attestation re-execution. Candidate policy is never an execution source.
+        validate_policy(policy)
+        validate_integrity(root)
+        rerun_ids = set(TRUSTED_PR_SAFE_COMMAND_IDS)
+        execution_policy = TRUSTED_PR_EXECUTION_POLICY
     validate_attestation(
         read_json(path),
         root=root,
         base_commit=base_commit,
         rerun_commands=mode in ("ci", "trusted-pr"),
         rerun_command_ids=rerun_ids,
+        rerun_execution_policy=execution_policy,
     )
 
 

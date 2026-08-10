@@ -55,18 +55,31 @@ Run the main thread as the Coordinator. Never simulate independent roles in the 
 
 ## 6. Build a blind review packet
 
+Run every required verification command through `run-verification` on the current workflow attestation before packet preparation. Then create the packet input with only the four caller-authored fields below:
+
+- Original user request
+- Acceptance criteria
+- Repository rules relevant to review
+- Relevant final source references
+
+`prepare-reviewer-packet` must load that workflow attestation and generate the remaining evidence itself:
+
+- Canonical task diff metadata
+- Canonical textual task patch for the same diff
+- Successful required verification command records from the attestation
+
 Create a minimal packet containing only:
 
 - Original user request
 - Acceptance criteria
 - Repository rules relevant to review
-- Task-specific final diff, excluding baseline changes
+- Task-specific final diff metadata and textual patch, excluding baseline changes
 - Relevant final source references
-- Verification commands and results
+- Attested verification command records
 
 Exclude Researcher notes, Planner output, Implementer prompts, implementation conversation, attempts, rationale, and AI work logs.
 
-Generate the exact sanitized packet copy with `prepare-reviewer-packet`, deliver that same copy, and digest it with `scripts/ai_harness/workflow_attestation.py`; do not store packet bodies in the tracked attestation.
+Generate the exact sanitized packet copy with `prepare-reviewer-packet`, deliver that same copy, and bind its full digest as the pending prepared packet in the tracked attestation; do not store packet bodies there. `stage reviewer` must consume that exact prepared digest, and only another explicit prepare command may replace it after source or verification changes. Diff metadata and patch must come from one immutable source snapshot, and packet assembly must fail closed if a final source sample changed. Packet generation must also fail closed for unsafe manual-field controls, secret/PII redaction, binary or non-UTF-8 changes, NUL bytes, or a final packet over 2 MiB.
 
 ## 7. Delegate independent review
 
@@ -89,5 +102,5 @@ Generate the exact sanitized packet copy with `prepare-reviewer-packet`, deliver
 - Commit, push, deploy, mutate production, or delete data only when the user explicitly requests it.
 - Never claim independent review if a fresh Reviewer subagent was unavailable. State the limitation clearly.
 - Finalize the workflow attestation and run `npm run ai:harness:check` before reporting completion.
-- Record verification only through `run-verification`; never accept a caller-supplied exit status.
+- Record verification only through `run-verification`; never accept a caller-supplied exit status. Treat any task diff digest change across a command, including a trusted safe rerun, as verification failure.
 - Treat attestation as a structural consistency statement, not cryptographic proof that a human or independent Reviewer performed an action.

@@ -102,6 +102,9 @@ def build_record(
 ) -> dict[str, Any]:
     policy = load_policy(root)
     reject_forbidden_keys(raw_envelope, policy["prompt_history"]["forbidden_keys"])
+    # Validate caller-authored control characters before redaction can replace
+    # the surrounding text and accidentally erase an unsafe byte.
+    validate_envelope(raw_envelope, policy)
     sanitized, redactions = sanitize_value(raw_envelope)
     envelope = validate_envelope(sanitized, policy)
     template_path, template, template_digest, contract_path, contract, contract_digest = assets_for_role(role, root)

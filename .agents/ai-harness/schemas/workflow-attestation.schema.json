@@ -19,6 +19,7 @@
     "approved_scope_paths_digest",
     "events",
     "reviewer_packet",
+    "prepared_reviewer_packet_digest",
     "verification",
     "bootstrap"
   ],
@@ -76,12 +77,37 @@
           "additionalProperties": false,
           "required": ["field_digests", "packet_digest", "task_diff_digest"],
           "properties": {
-            "field_digests": {"type": "object"},
+            "field_digests": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "original_request",
+                "acceptance_criteria",
+                "review_rules",
+                "task_diff",
+                "task_patch",
+                "final_source_references",
+                "verification"
+              ],
+              "properties": {
+                "original_request": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+                "acceptance_criteria": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+                "review_rules": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+                "task_diff": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+                "task_patch": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+                "final_source_references": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+                "verification": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+              }
+            },
             "packet_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
             "task_diff_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
           }
         }
       ]
+    },
+    "prepared_reviewer_packet_digest": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
     },
     "verification": {
       "type": "array",

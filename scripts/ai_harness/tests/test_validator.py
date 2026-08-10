@@ -9,9 +9,12 @@ import tempfile
 import unittest
 from pathlib import Path
 from contextlib import redirect_stderr
+from unittest import mock
 
 from scripts.ai_harness.common import HarnessError, load_policy
 from scripts.ai_harness.validate import (
+    TRUSTED_PR_EXECUTION_POLICY,
+    TRUSTED_PR_SAFE_COMMAND_IDS,
     validate_ai_workflow_text,
     validate_deploy_workflow_text,
     validate_trusted_pr_workflow_text,
@@ -20,6 +23,7 @@ from scripts.ai_harness.validate import (
     validate_policy,
     validate_roles,
     validate_runtime,
+    validate_current_attestation,
     resolve_base,
     main as validate_main,
 )
@@ -156,6 +160,50 @@ class ValidatorFailureTests(unittest.TestCase):
         with self.assertRaises(HarnessError):
             validate_trusted_pr_workflow_text(altered)
 
+    def test_trusted_pr_policy_failure_blocks_attestation_reexecution(self) -> None:
+        altered = copy.deepcopy(self.policy)
+        altered["verification"]["commands"]["git_diff_check"]["argv"] = [
+            "python3",
+            "candidate.py",
+        ]
+        with (
+            mock.patch(
+                "scripts.ai_harness.validate.select_attestation",
+                return_value=Path("candidate-attestation.json"),
+            ),
+            mock.patch("scripts.ai_harness.validate.load_policy", return_value=altered),
+            mock.patch("scripts.ai_harness.validate.validate_attestation") as attestation_check,
+        ):
+            with self.assertRaises(HarnessError):
+                validate_current_attestation(Path.cwd(), "a" * 40, "trusted-pr")
+        attestation_check.assert_not_called()
+
+    def test_trusted_pr_reexecution_uses_only_compiled_git_commands(self) -> None:
+        altered = copy.deepcopy(self.policy)
+        altered["verification"]["commands"]["candidate_python"] = {
+            "argv": ["python3", "candidate.py"],
+            "stdout_must_be_empty": False,
+            "trusted_pr_safe": True,
+        }
+        with (
+            mock.patch(
+                "scripts.ai_harness.validate.select_attestation",
+                return_value=Path("candidate-attestation.json"),
+            ),
+            mock.patch("scripts.ai_harness.validate.load_policy", return_value=altered),
+            mock.patch("scripts.ai_harness.validate.validate_policy"),
+            mock.patch("scripts.ai_harness.validate.validate_integrity"),
+            mock.patch("scripts.ai_harness.validate.read_json", return_value={}),
+            mock.patch("scripts.ai_harness.validate.validate_attestation") as attestation_check,
+        ):
+            validate_current_attestation(Path.cwd(), "a" * 40, "trusted-pr")
+        kwargs = attestation_check.call_args.kwargs
+        self.assertEqual(kwargs["rerun_command_ids"], set(TRUSTED_PR_SAFE_COMMAND_IDS))
+        self.assertIs(kwargs["rerun_execution_policy"], TRUSTED_PR_EXECUTION_POLICY)
+        commands = TRUSTED_PR_EXECUTION_POLICY["verification"]["commands"]
+        self.assertNotIn("candidate_python", commands)
+        self.assertTrue(all(config["argv"][0] == "git" for config in commands.values()))
+
     def test_deploy_unit_test_noop_is_rejected(self) -> None:
         text = Path(".github/workflows/deploy-frontend.yml").read_text()
         altered = text.replace(
@@ -186,6 +234,18 @@ class ValidatorFailureTests(unittest.TestCase):
         # Updating a separate integrity manifest cannot change the compiled baseline check.
         with self.assertRaises(HarnessError):
             validate_policy(altered)
+
+    def test_reviewer_packet_generation_policy_cannot_be_weakened(self) -> None:
+        for key, value in (
+            ("reviewer_packet_generated_fields", ["task_diff"]),
+            ("prepared_reviewer_packet_digest", "optional"),
+            ("reviewer_packet_max_bytes", 4 * 1024 * 1024),
+        ):
+            with self.subTest(key=key):
+                altered = copy.deepcopy(self.policy)
+                altered["workflow"][key] = value
+                with self.assertRaises(HarnessError):
+                    validate_policy(altered)
 
     def test_contract_digest_change_is_rejected_by_prompt_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -20,22 +20,26 @@ from scripts.ai_harness.common import (  # noqa: E402
     POLICY_PATH,
     PROMPT_MANIFEST_PATH,
     REPO_ROOT,
+    REVIEWER_PACKET_MAX_BYTES,
     HarnessError,
     anonymous_id,
     atomic_write_json,
+    capture_task_snapshot,
     canonical_json_bytes,
     compute_task_diff_digest,
-    compute_task_diff_snapshot,
     get_local_salt,
     load_policy,
     prune_runtime,
     read_json,
     reject_forbidden_keys,
+    reject_unsafe_controls,
     resolve_repo_relative_path,
     resolve_runtime_path,
     sanitize_value,
     sha256_file,
     sha256_json,
+    task_diff_from_snapshot,
+    task_patch_from_snapshot,
     validate_bootstrap_changed_paths,
     validate_scope_paths,
     path_matches_scope,
@@ -60,6 +64,7 @@ ATTESTATION_KEYS = {
     "approved_scope_paths_digest",
     "events",
     "reviewer_packet",
+    "prepared_reviewer_packet_digest",
     "verification",
     "bootstrap",
 }
@@ -75,6 +80,7 @@ EVENT_KEYS = {
     "round",
 }
 PACKET_ATTESTATION_KEYS = {"field_digests", "packet_digest", "task_diff_digest"}
+PREPARED_PACKET_DIGEST_FIELD = "prepared_reviewer_packet_digest"
 VERIFICATION_KEYS = {
     "command_id",
     "argv_digest",
@@ -88,6 +94,7 @@ PACKET_CONTENT_MARKER_RE = re.compile(
     r"(?i)(?:\b(?:rationale|command[_ -]?output|transcript|runtime[_ -]?logs?)\s*[:=]|\.ai-runtime/)"
 )
 SOURCE_SYMBOL_RE = re.compile(r"^(?:[A-Za-z_][A-Za-z0-9_.-]*|[1-9][0-9]*)$")
+PACKET_GENERATED_FIELDS = {"task_diff", "task_patch", "verification"}
 
 
 def validate_policy_constants(policy: dict[str, Any]) -> None:
@@ -96,6 +103,8 @@ def validate_policy_constants(policy: dict[str, Any]) -> None:
     bootstrap = policy.get("bootstrap", {})
     if bootstrap.get("base_commit") != INSTALLATION_BASE_COMMIT:
         raise HarnessError("policy bootstrap baseline differs from the compiled installation baseline")
+    if policy.get("workflow", {}).get("prepared_reviewer_packet_digest") != "required":
+        raise HarnessError("policy must require an exact prepared Reviewer packet digest")
 
 
 def _reject_packet_content_markers(value: Any, path: str = "$.reviewer_packet") -> None:
@@ -112,6 +121,7 @@ def _reject_packet_content_markers(value: Any, path: str = "$.reviewer_packet") 
 def _validate_source_reference(root: Path, reference: Any) -> str:
     if not isinstance(reference, str) or not reference:
         raise HarnessError("final_source_references entries must be non-empty strings")
+    reject_unsafe_controls(reference, label="final_source_references entry")
     path_text = reference
     if "#" in reference:
         path_text, symbol = reference.rsplit("#", 1)
@@ -148,30 +158,42 @@ def _validate_source_reference(root: Path, reference: Any) -> str:
 def _validate_reviewer_packet_shape(packet: dict[str, Any], policy: dict[str, Any], root: Path) -> None:
     if not isinstance(packet["original_request"], str) or not packet["original_request"].strip():
         raise HarnessError("Reviewer packet original_request must be a non-empty string")
+    reject_unsafe_controls(
+        packet["original_request"],
+        label="Reviewer packet original_request",
+        allow_newline=True,
+        allow_tab=True,
+    )
     for key in ("acceptance_criteria", "review_rules"):
         value = packet[key]
         if not isinstance(value, list) or not value or not all(isinstance(item, str) and item.strip() for item in value):
             raise HarnessError(f"Reviewer packet {key} must be a non-empty array of strings")
+        for index, item in enumerate(value):
+            reject_unsafe_controls(
+                item,
+                label=f"Reviewer packet {key}[{index}]",
+                allow_newline=True,
+                allow_tab=True,
+            )
     references = packet["final_source_references"]
     if not isinstance(references, list) or not references:
         raise HarnessError("Reviewer packet final_source_references must be a non-empty array")
     for reference in references:
         _validate_source_reference(root, reference)
+    if not isinstance(packet["task_diff"], dict):
+        raise HarnessError("Reviewer packet task_diff must be a canonical diff snapshot")
+    if not isinstance(packet["task_patch"], str):
+        raise HarnessError("Reviewer packet task_patch must be a canonical textual patch")
     verification = packet["verification"]
     if not isinstance(verification, list) or not verification:
         raise HarnessError("Reviewer packet verification must be a non-empty array")
-    allowed_commands = set(policy["verification"]["commands"])
-    seen_commands: set[str] = set()
     for item in verification:
-        if not isinstance(item, dict) or set(item) != {"command_id", "status"}:
-            raise HarnessError("Reviewer packet verification entries only allow command_id and status")
-        command_id = item["command_id"]
-        if command_id not in allowed_commands or command_id in seen_commands:
-            raise HarnessError(f"Reviewer packet has an invalid or duplicate command_id: {command_id}")
-        if item["status"] not in ("passed", "failed"):
-            raise HarnessError(f"Reviewer packet has an invalid verification status: {command_id}")
-        seen_commands.add(command_id)
-    _reject_packet_content_markers(packet)
+        if not isinstance(item, dict) or set(item) != VERIFICATION_KEYS:
+            raise HarnessError("Reviewer packet verification entries must be generated command records")
+    manual_fields = {
+        key: value for key, value in packet.items() if key not in PACKET_GENERATED_FIELDS
+    }
+    _reject_packet_content_markers(manual_fields)
 
 
 def canonical_reviewer_packet(
@@ -180,33 +202,66 @@ def canonical_reviewer_packet(
     *,
     root: Path,
     base_commit: str,
-    allow_missing_task_diff: bool = False,
+    attestation: dict[str, Any] | None = None,
+    allow_generated_fields: bool = False,
+    allow_missing_task_diff: bool | None = None,
 ) -> dict[str, Any]:
     if not isinstance(raw_packet, dict):
         raise HarnessError("Reviewer packet must be an object")
     workflow = policy["workflow"]
     allowed = set(workflow["reviewer_packet_allowed_fields"])
-    accepted_keys = [allowed]
-    if allow_missing_task_diff:
-        accepted_keys.append(allowed - {"task_diff"})
-    if set(raw_packet) not in accepted_keys:
+    configured_generated = set(workflow.get("reviewer_packet_generated_fields", []))
+    if configured_generated != PACKET_GENERATED_FIELDS:
+        raise HarnessError("Reviewer packet generated fields differ from the compiled allowlist")
+    manual = allowed - PACKET_GENERATED_FIELDS
+    expected_input = allowed if allow_generated_fields else manual
+    if set(raw_packet) != expected_input:
         extra = sorted(set(raw_packet) - allowed)
-        missing = sorted(allowed - set(raw_packet))
+        generated = sorted(set(raw_packet) & PACKET_GENERATED_FIELDS)
+        missing = sorted(expected_input - set(raw_packet))
+        if generated and not allow_generated_fields:
+            raise HarnessError(f"Reviewer packet generated fields cannot be caller-supplied: {generated}")
         raise HarnessError(f"Reviewer packet fields invalid; extra={extra}, missing={missing}")
+    if allow_missing_task_diff is False or allow_missing_task_diff is not None and allow_generated_fields:
+        raise HarnessError("legacy task_diff input controls are not supported")
+    if attestation is None:
+        raise HarnessError("Reviewer packet generation requires a workflow attestation")
     forbidden = list(policy["prompt_history"]["forbidden_keys"]) + list(
         workflow["reviewer_packet_forbidden_fields"]
     )
     reject_forbidden_keys(raw_packet, forbidden, "$.reviewer_packet")
-    sanitized, redactions = sanitize_value(raw_packet)
-    if sanitized != raw_packet or redactions:
-        raise HarnessError("Reviewer packet contains secret or PII; prepare and deliver one exact sanitized copy")
     packet = dict(raw_packet)
+    source_snapshot = capture_task_snapshot(root, base_commit)
+    expected_task_diff = task_diff_from_snapshot(source_snapshot)
+    expected_generated = {
+        "task_diff": expected_task_diff,
+        "task_patch": task_patch_from_snapshot(root, source_snapshot),
+        "verification": reviewer_packet_verification(
+            attestation,
+            policy,
+            base_commit=base_commit,
+            current_task_diff_digest=sha256_json(expected_task_diff),
+        ),
+    }
+    for key, expected in expected_generated.items():
+        if key in packet and packet[key] != expected:
+            raise HarnessError(f"Reviewer packet {key} does not match harness-generated evidence")
+        packet[key] = expected
     _validate_reviewer_packet_shape(packet, policy, root)
-    expected_task_diff = compute_task_diff_snapshot(root, base_commit)
-    if "task_diff" not in packet:
-        packet["task_diff"] = expected_task_diff
-    elif packet["task_diff"] != expected_task_diff:
-        raise HarnessError("Reviewer packet task_diff does not match the current task diff")
+    sanitized, redactions = sanitize_value(packet)
+    if sanitized != packet or redactions:
+        raise HarnessError("Reviewer packet contains secret or PII; packet generation fails closed")
+    configured_max = workflow.get("reviewer_packet_max_bytes")
+    if configured_max != REVIEWER_PACKET_MAX_BYTES:
+        raise HarnessError("Reviewer packet size limit differs from the compiled 2 MiB limit")
+    try:
+        packet_bytes = canonical_json_bytes(packet) + b"\n"
+    except UnicodeEncodeError as exc:
+        raise HarnessError("Reviewer packet is not valid UTF-8") from exc
+    if len(packet_bytes) > REVIEWER_PACKET_MAX_BYTES:
+        raise HarnessError(f"Reviewer packet exceeds {REVIEWER_PACKET_MAX_BYTES} bytes")
+    if compute_task_diff_digest(root, base_commit) != sha256_json(expected_task_diff):
+        raise HarnessError("source changed while assembling the Reviewer packet")
     return packet
 
 
@@ -246,7 +301,7 @@ def validate_packet_attestation(packet: Any, policy: dict[str, Any]) -> dict[str
     return packet
 
 
-def _validate_common(attestation: Any, root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+def _validate_common_structure(attestation: Any, root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     if not isinstance(attestation, dict):
         raise HarnessError("attestation must be an object")
     if set(attestation) != ATTESTATION_KEYS:
@@ -289,16 +344,37 @@ def _validate_common(attestation: Any, root: Path) -> tuple[dict[str, Any], dict
             raise HarnessError("approved scope paths digest mismatch")
     elif attestation["approved_scope_paths_digest"] is not None:
         raise HarnessError("empty approved scope paths cannot have a digest")
+    prepared_packet_digest = attestation[PREPARED_PACKET_DIGEST_FIELD]
+    if prepared_packet_digest is not None and not HEX_64.fullmatch(
+        prepared_packet_digest if isinstance(prepared_packet_digest, str) else ""
+    ):
+        raise HarnessError("invalid prepared Reviewer packet digest")
     policy = load_policy(root)
     validate_policy_constants(policy)
-    if attestation["policy_digest"] != sha256_file(root / POLICY_PATH):
-        raise HarnessError("stale attestation policy digest")
-    if attestation["prompt_manifest_digest"] != sha256_file(root / PROMPT_MANIFEST_PATH):
-        raise HarnessError("stale attestation prompt manifest digest")
-    if attestation["integrity_manifest_digest"] != sha256_file(root / INTEGRITY_MANIFEST_PATH):
-        raise HarnessError("stale attestation integrity manifest digest")
     if not isinstance(attestation["events"], list) or not isinstance(attestation["verification"], list):
         raise HarnessError("attestation events and verification must be arrays")
+    return attestation, policy
+
+
+def _repository_digests(root: Path) -> dict[str, str]:
+    return {
+        "policy_digest": sha256_file(root / POLICY_PATH),
+        "prompt_manifest_digest": sha256_file(root / PROMPT_MANIFEST_PATH),
+        "integrity_manifest_digest": sha256_file(root / INTEGRITY_MANIFEST_PATH),
+    }
+
+
+def _refresh_repository_digests(attestation: dict[str, Any], root: Path) -> None:
+    attestation.update(_repository_digests(root))
+
+
+def _validate_common(attestation: Any, root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    attestation, policy = _validate_common_structure(attestation, root)
+    expected = _repository_digests(root)
+    for key, value in expected.items():
+        if attestation[key] != value:
+            label = key.removesuffix("_digest").replace("_", " ")
+            raise HarnessError(f"stale attestation {label} digest")
     return attestation, policy
 
 
@@ -362,12 +438,38 @@ def validate_verification(
         raise HarnessError(f"missing verification command ids: {sorted(required_ids - seen)}")
 
 
+def reviewer_packet_verification(
+    attestation: dict[str, Any],
+    policy: dict[str, Any],
+    *,
+    base_commit: str,
+    current_task_diff_digest: str,
+) -> list[dict[str, Any]]:
+    if attestation.get("kind") != "workflow":
+        raise HarnessError("Reviewer packet evidence requires a workflow attestation")
+    if attestation.get("base_commit") != base_commit:
+        raise HarnessError("Reviewer packet base differs from the workflow attestation")
+    if not isinstance(attestation.get("verification"), list):
+        raise HarnessError("workflow attestation verification must be an array")
+    validate_verification(
+        attestation,
+        policy,
+        require_complete=True,
+        current_task_diff_digest=current_task_diff_digest,
+    )
+    return [
+        dict(item)
+        for item in sorted(attestation["verification"], key=lambda record: record["command_id"])
+    ]
+
+
 def run_verification_command(
     attestation: dict[str, Any], command_id: str, *, root: Path, policy: dict[str, Any]
 ) -> dict[str, Any]:
     if command_id not in _required_verification_ids(policy, attestation["kind"]):
         raise HarnessError(f"command id is not required for {attestation['kind']}: {command_id}")
     argv = _verification_argv(policy, command_id, attestation["base_commit"])
+    task_diff_before = compute_task_diff_digest(root, attestation["base_commit"])
     try:
         completed = subprocess.run(
             argv,
@@ -383,6 +485,8 @@ def run_verification_command(
     if config.get("stdout_must_be_empty") and completed.stdout.strip():
         status = 1
     task_diff_digest = compute_task_diff_digest(root, attestation["base_commit"])
+    if task_diff_digest != task_diff_before:
+        status = 1
     argv_digest = sha256_json(argv)
     record = {
         "command_id": command_id,
@@ -410,13 +514,24 @@ def rerun_verification(
     *,
     root: Path,
     command_ids: set[str] | None = None,
+    execution_policy: dict[str, Any] | None = None,
 ) -> None:
     records = {item["command_id"]: item for item in attestation["verification"]}
-    selected = command_ids or _required_verification_ids(policy, attestation["kind"])
+    selected = (
+        _required_verification_ids(policy, attestation["kind"])
+        if command_ids is None
+        else command_ids
+    )
     if not selected <= set(records):
         raise HarnessError(f"cannot rerun missing verification records: {sorted(selected - set(records))}")
+    command_policy = execution_policy if execution_policy is not None else policy
     for command_id in sorted(selected):
-        actual = run_verification_command(attestation, command_id, root=root, policy=policy)
+        actual = run_verification_command(
+            attestation,
+            command_id,
+            root=root,
+            policy=command_policy,
+        )
         if actual != records[command_id]:
             raise HarnessError(f"CI re-execution differs from verification record: {command_id}")
 
@@ -456,6 +571,7 @@ def validate_event_sequence(
     *,
     require_complete: bool,
     expected_task_diff_digest: str,
+    expected_task_patch_digest: str | None,
 ) -> None:
     events = attestation["events"]
     if not events:
@@ -556,7 +672,9 @@ def validate_event_sequence(
         raise HarnessError("attestation approved_scope_digest is stale")
     if attestation["approved_scope_paths_digest"] != current_scope_paths_digest:
         raise HarnessError("attestation approved_scope_paths_digest is stale")
-    if final_review is not None:
+    if final_review is not None and events[-1]["stage"] == "reviewer":
+        if attestation[PREPARED_PACKET_DIGEST_FIELD] is not None:
+            raise HarnessError("Reviewer event did not consume the prepared packet digest")
         packet = validate_packet_attestation(attestation["reviewer_packet"], policy)
         if final_review["context_digest"] != packet["packet_digest"]:
             raise HarnessError("final Reviewer context is not the exact blind packet digest")
@@ -564,6 +682,20 @@ def validate_event_sequence(
             raise HarnessError("final Reviewer event and packet task diff digests differ")
         if packet["task_diff_digest"] != expected_task_diff_digest:
             raise HarnessError("source changed after the final blind Reviewer packet")
+        if (
+            expected_task_patch_digest is not None
+            and packet["field_digests"]["task_patch"]
+            != f"sha256:{expected_task_patch_digest}"
+        ):
+            raise HarnessError("Reviewer packet task_patch differs from the current canonical patch")
+        expected_verification = reviewer_packet_verification(
+            attestation,
+            policy,
+            base_commit=attestation["base_commit"],
+            current_task_diff_digest=expected_task_diff_digest,
+        )
+        if packet["field_digests"]["verification"] != f"sha256:{sha256_json(expected_verification)}":
+            raise HarnessError("Reviewer packet verification differs from the workflow attestation")
 
 
 def validate_changed_paths_in_scope(snapshot: dict[str, Any], scope_paths: list[str]) -> None:
@@ -591,12 +723,19 @@ def validate_attestation(
     check_diff: bool = True,
     rerun_commands: bool = False,
     rerun_command_ids: set[str] | None = None,
+    rerun_execution_policy: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     attestation, policy = _validate_common(attestation, root)
     if attestation["base_commit"] != base_commit:
         raise HarnessError("stale attestation base commit")
-    current_snapshot = compute_task_diff_snapshot(root, base_commit) if check_diff else None
+    captured = capture_task_snapshot(root, base_commit) if check_diff else None
+    current_snapshot = task_diff_from_snapshot(captured) if captured is not None else None
     current_digest = sha256_json(current_snapshot) if current_snapshot is not None else attestation["task_diff_digest"]
+    current_patch_digest = (
+        sha256_json(task_patch_from_snapshot(root, captured))
+        if captured is not None and attestation["kind"] == "workflow"
+        else None
+    )
     if attestation["task_diff_digest"] != current_digest:
         raise HarnessError("stale attestation task diff digest")
     validate_verification(
@@ -606,7 +745,13 @@ def validate_attestation(
         current_task_diff_digest=current_digest,
     )
     if rerun_commands:
-        rerun_verification(attestation, policy, root=root, command_ids=rerun_command_ids)
+        rerun_verification(
+            attestation,
+            policy,
+            root=root,
+            command_ids=rerun_command_ids,
+            execution_policy=rerun_execution_policy,
+        )
     if attestation["kind"] == "bootstrap":
         if base_commit != INSTALLATION_BASE_COMMIT:
             raise HarnessError("bootstrap attestation is forbidden for this baseline")
@@ -621,8 +766,9 @@ def validate_attestation(
             attestation["approved_scope_digest"] is not None
             or attestation["approved_scope_paths"] != []
             or attestation["approved_scope_paths_digest"] is not None
+            or attestation[PREPARED_PACKET_DIGEST_FIELD] is not None
         ):
-            raise HarnessError("bootstrap must not claim a historical approved scope")
+            raise HarnessError("bootstrap must not claim workflow scope or prepared packet state")
     else:
         if attestation["bootstrap"] is not None:
             raise HarnessError("normal workflow attestation cannot contain bootstrap metadata")
@@ -631,6 +777,7 @@ def validate_attestation(
             policy,
             require_complete=require_complete,
             expected_task_diff_digest=current_digest,
+            expected_task_patch_digest=current_patch_digest,
         )
         scope_paths = validate_scope_paths(attestation["approved_scope_paths"])
         if current_snapshot is not None:
@@ -661,6 +808,7 @@ def new_attestation(task_id: str, base_commit: str, *, root: Path = REPO_ROOT) -
         "approved_scope_paths_digest": None,
         "events": [],
         "reviewer_packet": None,
+        PREPARED_PACKET_DIGEST_FIELD: None,
         "verification": [],
         "bootstrap": None,
     }
@@ -711,16 +859,34 @@ def command_prepare_reviewer_packet(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     policy = load_policy(root)
     prune_runtime(root, policy)
+    path, attestation = _load_attestation(root, args.file)
+    attestation, _ = _validate_common_structure(attestation, root)
+    if attestation["kind"] != "workflow" or attestation["base_commit"] != args.base:
+        raise HarnessError("Reviewer packet requires the matching workflow attestation")
+    captured = capture_task_snapshot(root, args.base)
+    current_task_diff_digest = sha256_json(task_diff_from_snapshot(captured))
+    validate_event_sequence(
+        attestation,
+        policy,
+        require_complete=False,
+        expected_task_diff_digest=current_task_diff_digest,
+        expected_task_patch_digest=sha256_json(task_patch_from_snapshot(root, captured)),
+    )
     packet = canonical_reviewer_packet(
         read_json(Path(args.input)),
         policy,
         root=root,
         base_commit=args.base,
-        allow_missing_task_diff=True,
+        attestation=attestation,
     )
     output = resolve_runtime_path(root, args.output, "reviewer-packets")
+    _refresh_repository_digests(attestation, root)
+    packet_digest = sha256_json(packet)
+    attestation[PREPARED_PACKET_DIGEST_FIELD] = packet_digest
+    _validate_common(attestation, root)
     write_private_json(output, packet)
-    print(json.dumps({"status": "ok", "packet_digest": sha256_json(packet)}, sort_keys=True))
+    atomic_write_json(path, attestation, private=False)
+    print(json.dumps({"status": "ok", "packet_digest": packet_digest}, sort_keys=True))
     return 0
 
 
@@ -729,7 +895,7 @@ def command_stage(args: argparse.Namespace) -> int:
     path, attestation = _load_attestation(root, args.file)
     if attestation.get("kind") != "workflow":
         raise HarnessError("stages can only be added to a workflow attestation")
-    policy = load_policy(root)
+    attestation, policy = _validate_common_structure(attestation, root)
     round_number = args.round
     scope_digest = attestation.get("approved_scope_digest")
     scope_paths_digest = attestation.get("approved_scope_paths_digest")
@@ -759,14 +925,22 @@ def command_stage(args: argparse.Namespace) -> int:
             policy,
             root=root,
             base_commit=attestation["base_commit"],
+            attestation=attestation,
+            allow_generated_fields=True,
         )
         packet_metadata = reviewer_packet_attestation(packet, policy)
+        prepared_packet_digest = attestation[PREPARED_PACKET_DIGEST_FIELD]
+        if prepared_packet_digest is None:
+            raise HarnessError("Reviewer stage requires an explicitly prepared packet digest")
+        if packet_metadata["packet_digest"] != prepared_packet_digest:
+            raise HarnessError("Reviewer packet does not match the exact prepared packet digest")
         context_digest = packet_metadata["packet_digest"]
         task_diff_digest = packet_metadata["task_diff_digest"]
         status = args.status
         if status not in ("approved", "changes_requested"):
             raise HarnessError("Reviewer status must be approved or changes_requested")
         attestation["reviewer_packet"] = packet_metadata
+        attestation[PREPARED_PACKET_DIGEST_FIELD] = None
     else:
         context_digest, record_scope_digest, record_scope_paths_digest, record_scope_paths = _context_from_record(
             args.context_record,
@@ -798,11 +972,13 @@ def command_stage(args: argparse.Namespace) -> int:
         "round": round_number,
     }
     attestation["events"].append(event)
+    captured = capture_task_snapshot(root, attestation["base_commit"])
     validate_event_sequence(
         attestation,
         policy,
         require_complete=False,
-        expected_task_diff_digest=compute_task_diff_digest(root, attestation["base_commit"]),
+        expected_task_diff_digest=sha256_json(task_diff_from_snapshot(captured)),
+        expected_task_patch_digest=sha256_json(task_patch_from_snapshot(root, captured)),
     )
     atomic_write_json(path, attestation, private=False)
     print(json.dumps({"status": "ok", "sequence": event["sequence"]}, sort_keys=True))
@@ -832,7 +1008,9 @@ def command_run_verification(args: argparse.Namespace) -> int:
 def command_finalize(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
     path, attestation = _load_attestation(root, args.file)
+    _validate_common_structure(attestation, root)
     attestation["task_diff_digest"] = compute_task_diff_digest(root, args.base)
+    _refresh_repository_digests(attestation, root)
     validate_attestation(attestation, root=root, base_commit=args.base, require_complete=True)
     atomic_write_json(path, attestation, private=False)
     print(json.dumps({"status": "ok", "task_diff_digest": attestation["task_diff_digest"]}, sort_keys=True))
@@ -860,6 +1038,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     packet = subparsers.add_parser("prepare-reviewer-packet")
     packet.add_argument("--input", required=True)
+    packet.add_argument("--file", required=True)
     packet.add_argument("--base", required=True)
     packet.add_argument("--output", required=True)
     packet.set_defaults(handler=command_prepare_reviewer_packet)

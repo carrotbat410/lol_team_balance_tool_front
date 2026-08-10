@@ -37,6 +37,29 @@ class PromptHistoryTests(unittest.TestCase):
         with self.assertRaises(HarnessError):
             build_record(value, "implementer", salt=b"s" * 32)
 
+    def test_manual_text_controls_are_rejected_before_prompt_record_storage(self) -> None:
+        secret_assignment = "token" + "=secret" + "\x00value"
+        for field, value in (
+            ("original_request", "unsafe\x00request"),
+            ("original_request", secret_assignment),
+            ("acceptance_criteria", ["unsafe\x1fcriterion"]),
+            ("acceptance_criteria", ["unsafe\x85criterion"]),
+            ("source_references", ["AGENTS.md\n"]),
+            ("source_references", ["AGENTS.md\t"]),
+        ):
+            with self.subTest(field=field, value=value):
+                candidate = envelope()
+                candidate[field] = value
+                with self.assertRaises(HarnessError):
+                    build_record(candidate, "implementer", salt=b"s" * 32)
+
+    def test_prompt_prose_allows_line_feed_and_tab(self) -> None:
+        value = envelope()
+        value["original_request"] = "line one\n\tline two"
+        value["acceptance_criteria"] = ["criterion one\n\tcriterion two"]
+        record = build_record(value, "implementer", salt=b"s" * 32)
+        self.assertEqual(record["envelope"]["original_request"], value["original_request"])
+
     def test_role_templates_produce_distinct_context_digests(self) -> None:
         digests = {
             build_record(envelope(), role, created_at="2026-01-01T00:00:00Z", salt=b"s" * 32)[

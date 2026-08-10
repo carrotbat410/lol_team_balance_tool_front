@@ -55,19 +55,15 @@ python3 scripts/ai_harness/workflow_attestation.py stage \
 python3 scripts/ai_harness/workflow_attestation.py stage \
   --file .agents/ai-harness/attestations/issue-123.json \
   --stage human_approval --scope approved-scope.json
-
-python3 scripts/ai_harness/workflow_attestation.py prepare-reviewer-packet \
-  --input reviewer-packet-input.json --base <base-commit> \
-  --output .ai-runtime/reviewer-packets/issue-123.json
-
-python3 scripts/ai_harness/workflow_attestation.py stage \
-  --file .agents/ai-harness/attestations/issue-123.json \
-  --stage reviewer --packet .ai-runtime/reviewer-packets/issue-123.json --status approved
 ```
 
 `approved-scope.json`은 `{"approved_scope":["승인 설명"],"scope_paths":["scripts/ai_harness/**"]}` 형태다. Implementer envelope에도 같은 두 필드가 있어야 하며, human approval과 Implementer record의 결합 digest 및 `scope_paths` digest가 모두 일치해야 한다. 일반 workflow finalize는 실제 task diff의 모든 경로가 이 목록에 포함되는지 확인한다.
 
-Reviewer packet 입력은 `task_diff`를 제외한 다섯 허용 필드를 담을 수 있다. `prepare-reviewer-packet`이 현재 기준 commit 대비 canonical task diff snapshot을 직접 넣고, secret/PII 정제가 한 건이라도 필요하면 입력을 거부한다. 금지 key는 nested object까지 재귀 검사한다. source reference는 저장소 안의 symlink가 아닌 regular file과 선택적 symbol/line reference만 허용하며, verification은 `command_id`와 `passed`/`failed` 상태만 허용하고 output 본문을 받지 않는다. `rationale:`, `command_output:`, `transcript:`, runtime log 경로를 문자열에 삽입하는 것도 거부한다. 따라서 생성된 정확한 사본만 Reviewer에게 전달하고 `stage reviewer`에도 같은 파일을 사용해야 한다.
+Reviewer packet 입력은 `original_request`, `acceptance_criteria`, `review_rules`, `final_source_references` 네 필드만 받는다. `task_diff`, `task_patch`, `verification`은 호출자가 제공할 수 없고 `prepare-reviewer-packet`이 지정된 tracked workflow attestation과 현재 기준 commit에서 생성한다. caller-authored prose는 LF와 TAB만 허용하고 그 외 C0/C1 control과 NUL을 거부하며, source reference path는 LF/TAB을 포함한 모든 C0/C1 control을 거부한다. prompt history의 원 요청·인수 조건·source reference에도 같은 정책을 저장 전에 적용한다.
+
+`task_patch`는 같은 diff의 tracked/untracked 추가·수정·삭제와 mode 변경을 경로순으로 표현한 실제 UTF-8 textual patch다. mode `160000` gitlink는 base와 current를 방향별로 모델링한다. gitlink → tree는 gitlink 삭제와 resulting regular tracked/untracked 파일 추가를 모두 기록하고, tree → gitlink는 base descendant 삭제와 gitlink 추가/갱신을 모두 기록한다. current gitlink 아래 checkout 내용은 순회하거나 읽지 않고 superproject index와 안전하게 제한한 Git HEAD metadata의 commit object ID만 사용한다. 일반 파일의 기존 `task_diff` 표현과 digest는 유지하고, 과거에 보이지 않던 gitlink가 있는 경우에만 이 새 coverage로 digest가 달라지는 것이 의도된 호환성 예외다. 변경된 base/current 내용에 binary control, NUL, 비 UTF-8가 있거나 최종 canonical JSON packet과 개행이 2 MiB를 넘으면 출력 파일을 만들기 전에 실패한다.
+
+필수 verification은 packet 준비 전에 모두 `run-verification`으로 성공해야 한다. 각 command는 실행 직전과 직후 canonical task diff digest를 계산하며 값이 달라지면 process가 성공했더라도 실패 record로 남긴다. trusted safe rerun도 같은 전후 일관성 검사를 적용한다. packet에는 command output 대신 attestation의 `command_id`, argv/result digest, exit status, base commit, task diff digest record가 결정적 순서로 들어간다. 호출자 제공 verification, 누락·실패·오래된 record는 거부한다. 금지 key는 nested object까지 재귀 검사하고 source reference는 저장소 안의 symlink가 아닌 regular file과 선택적 symbol/line reference만 허용한다. 수동 필드의 `rationale:`, `command_output:`, `transcript:`, runtime log 경로도 거부한다. 세 evidence 필드까지 조립한 packet 전체에 secret/PII 검사를 다시 적용하며 정제가 한 건이라도 필요하면 fail closed한다. prepare는 이 전체 canonical packet digest를 attestation의 pending 필드에 저장한다. `stage reviewer`는 전달 파일의 전체 digest가 pending 값과 정확히 같을 때만 event를 만들고 그 값을 소비하며, source·verification 변경 뒤 pending 값을 교체할 수 있는 경로는 새 `prepare-reviewer-packet` 실행뿐이다.
 
 Planner와 Implementer도 각 role의 prompt record로 `stage`를 추가한다. Implementer prompt envelope의 `approved_scope` digest는 최신 human approval scope와 일치해야 한다. 각 역할 context digest는 달라야 하고, 승인 scope가 달라지면 새로운 `human_approval` event가 선행돼야 한다. Reviewer 수정-재리뷰 round는 최대 2회다. Reviewer event는 packet의 task diff digest를 기록하므로 리뷰 후 source가 바뀌면 새 Implementer pass와 새 blind Reviewer packet/event 없이 finalize할 수 없다.
 
@@ -82,13 +78,23 @@ python3 scripts/ai_harness/workflow_attestation.py run-verification \
   --file .agents/ai-harness/attestations/issue-123.json --command-id git_diff_check
 python3 scripts/ai_harness/workflow_attestation.py run-verification \
   --file .agents/ai-harness/attestations/issue-123.json --command-id runtime_untracked
+python3 scripts/ai_harness/workflow_attestation.py prepare-reviewer-packet \
+  --input reviewer-packet-input.json \
+  --file .agents/ai-harness/attestations/issue-123.json \
+  --base <base-commit> \
+  --output .ai-runtime/reviewer-packets/issue-123.json
+python3 scripts/ai_harness/workflow_attestation.py stage \
+  --file .agents/ai-harness/attestations/issue-123.json \
+  --stage reviewer --packet .ai-runtime/reviewer-packets/issue-123.json --status approved
 python3 scripts/ai_harness/workflow_attestation.py finalize \
   --file .agents/ai-harness/attestations/issue-123.json --base <base-commit>
 ```
 
 bootstrap profile은 설치 검증 command ID만 요구하고 일반 workflow profile은 동적인 task base의 ancestor 검사까지 요구한다. validator와 `npm run ai:harness:check`의 자기 성공을 attestation에 선기록하지 않으므로 순환 의존이 없다. `--output`과 `--file`은 `.agents/ai-harness/attestations/*.json`의 repository-relative 직접 자식만 허용하며 절대 경로, `..`, 부모/대상 symlink를 거부하고 atomic write를 사용한다.
 
-Reviewer packet의 허용 필드는 정제된 원 요청, 인수 조건, 리뷰 규칙, canonical task diff, 최종 source reference, 검증 명령·결과뿐이다. 하네스는 정확한 packet 사본을 로컬 runtime에 만들고 tracked attestation에는 필드별 digest, 전체 packet digest, task diff digest만 저장한다. Researcher/Planner/Implementer 기록, 구현 대화, rationale, runtime log 필드는 거부한다.
+`prepare-reviewer-packet`과 `finalize`는 `policy_digest`, `prompt_manifest_digest`, `integrity_manifest_digest`를 호출자 입력 없이 현재 저장소 파일에서 다시 계산한다. packet 준비는 기존 구조·event·verification과 생성된 diff/patch 및 secret/PII 검사를 먼저 통과한 뒤 갱신된 attestation을 원자적으로 저장하므로, `init` 이후 승인 범위 안에서 정책이나 integrity manifest가 바뀌어도 stale digest를 수동 입력하지 않는다.
+
+Reviewer packet의 허용 필드는 정제된 원 요청, 인수 조건, 리뷰 규칙, canonical task diff와 textual patch, 최종 source reference, attested 검증 record뿐이다. task diff와 patch는 base/current bytes 또는 안전한 gitlink object ID를 한 번 캡처한 immutable in-memory snapshot 하나에서 함께 파생한다. packet 조립 뒤 현재 diff를 다시 sampling해 조립 중 source 변경도 fail closed한다. 하네스는 정확한 packet 사본을 로컬 runtime에 만들고 tracked attestation에는 준비 중인 전체 packet digest를 저장한다. Reviewer stage가 그 digest를 소비한 뒤에는 `task_patch`와 `verification`을 포함한 필드별 digest, 전체 packet digest, 기존 task diff digest만 남긴다. Reviewer stage는 전달 사본의 전체 digest와 세 생성 필드를 모두 확인하고, validator는 최종 patch·verification digest와 현재 source를 다시 결합해 변조나 리뷰 후 변경을 거부한다. Researcher/Planner/Implementer 기록, 구현 대화, rationale, runtime log 필드는 거부한다.
 
 현재 최초 설치에만 코드에 고정된 기준 commit `5c333fdb8fa8a1e2a70a856bb43cdbe65bac3773`의 bootstrap attestation을 허용한다. policy 값을 함께 바꿔 이 기준을 이동할 수 없다. bootstrap diff는 하네스 코드·정책·template·test·CI 파일과 승인 계획의 deploy gate, docs/rules, package, `.gitignore` allowlist로 제한되며 앱·임의 파일이 포함되면 실패한다. bootstrap은 과거 lifecycle event나 승인·리뷰를 소급 생성하지 않는다. 이후 기준 commit에는 정상 workflow attestation이 필요하다.
 
@@ -101,7 +107,7 @@ npm run ai:harness:check
 
 validator는 필수 파일, JSON/TOML, role·sandbox, hook event/command allowlist, contract/template/schema/policy digest, `.ai-runtime` 미추적 상태, attestation 상태·scope path·diff digest·CI 재실행 검증, CI workflow, deploy `needs`를 확인한다.
 
-`@.github/workflows/ai-harness-check.yml`은 pull request와 수동 실행에서 일반 test를 수행한다. `@.github/workflows/ai-harness-trusted-pr.yml`은 `pull_request_target`에서 base branch의 validator를 `trusted` 경로에, PR head를 `candidate` 경로에 checkout하고 PR의 Python/test를 실행하지 않은 채 정적 구조·attestation과 trusted-safe Git 명령만 검사한다. 권한은 `contents: read`뿐이며 secret과 write 권한을 사용하지 않는다. `@.github/workflows/deploy-frontend.yml`은 main에 merge된 workflow의 gate를 선행 job으로 실행한다.
+`@.github/workflows/ai-harness-check.yml`은 pull request와 수동 실행에서 일반 test를 수행한다. `@.github/workflows/ai-harness-trusted-pr.yml`은 `pull_request_target`에서 base branch의 validator를 `trusted` 경로에, PR head를 `candidate` 경로에 checkout하고 PR의 Python/test를 실행하지 않은 채 정적 구조·attestation과 trusted 코드에 고정된 safe Git 명령만 검사한다. candidate policy의 command ID나 argv는 성공·실패 경로 어디에서도 실행 자료로 사용하지 않으며, candidate policy 또는 integrity 검사가 실패하면 attestation 재실행 전에 중단하되 본문 없는 실패 report는 계속 만든다. 권한은 `contents: read`뿐이며 secret과 write 권한을 사용하지 않는다. `@.github/workflows/deploy-frontend.yml`은 main에 merge된 workflow의 gate를 선행 job으로 실행한다.
 
 세 gate는 baseline/validator 실패를 수집하고, 정상 report가 없으면 본문 없는 fallback failure report를 만든다. artifact는 `always()`와 `if-no-files-found: error`로 7일 보존하고 마지막 enforcement가 baseline/unit/validator 실패를 job 실패로 반영한다. deploy gate가 실패하면 GHCR login/build/push와 SSH 배포 job은 시작하지 않는다.
 

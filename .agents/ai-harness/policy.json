@@ -100,9 +100,17 @@
       "acceptance_criteria",
       "review_rules",
       "task_diff",
+      "task_patch",
       "final_source_references",
       "verification"
     ],
+    "reviewer_packet_generated_fields": [
+      "task_diff",
+      "task_patch",
+      "verification"
+    ],
+    "prepared_reviewer_packet_digest": "required",
+    "reviewer_packet_max_bytes": 2097152,
     "reviewer_packet_forbidden_fields": [
       "researcher",
       "planner",
