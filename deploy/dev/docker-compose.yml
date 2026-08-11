@@ -1,0 +1,77 @@
+name: lol-team-balance-dev
+
+services:
+  lol-dev-mysql:
+    image: mysql:8.0
+    container_name: lol-dev-mysql
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DEV_MYSQL_DATABASE:?DEV_MYSQL_DATABASE is required}
+      MYSQL_USER: ${DEV_MYSQL_USER:?DEV_MYSQL_USER is required}
+      MYSQL_PASSWORD: ${DEV_MYSQL_PASSWORD:?DEV_MYSQL_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${DEV_MYSQL_ROOT_PASSWORD:?DEV_MYSQL_ROOT_PASSWORD is required}
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - lol_dev_mysql_data:/var/lib/mysql
+    networks:
+      - lol_dev_net
+
+  lol-dev-back:
+    image: ${LOL_BACK_IMAGE:-ghcr.io/carrotbat410/lol-team-balance-tool-back:dev-bootstrap-pending}
+    container_name: lol-dev-back
+    restart: unless-stopped
+    depends_on:
+      lol-dev-mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: ${DEV_SPRING_DATASOURCE_URL:?DEV_SPRING_DATASOURCE_URL is required}
+      SPRING_DATASOURCE_USERNAME: ${DEV_SPRING_DATASOURCE_USERNAME:?DEV_SPRING_DATASOURCE_USERNAME is required}
+      SPRING_DATASOURCE_PASSWORD: ${DEV_SPRING_DATASOURCE_PASSWORD:?DEV_SPRING_DATASOURCE_PASSWORD is required}
+      SPRING_JWT_SECRET: ${DEV_SPRING_JWT_SECRET:?DEV_SPRING_JWT_SECRET is required}
+      RIOT_API_BASEURL_KR: ${DEV_RIOT_API_BASEURL_KR:?DEV_RIOT_API_BASEURL_KR is required}
+      RIOT_API_BASEURL_ASIA: ${DEV_RIOT_API_BASEURL_ASIA:?DEV_RIOT_API_BASEURL_ASIA is required}
+      RIOT_API_KEY: ${DEV_RIOT_API_KEY:?DEV_RIOT_API_KEY is required}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    ports:
+      - "127.0.0.1:28080:8080"
+    networks:
+      - lol_dev_net
+
+  lol-dev-front:
+    image: ${LOL_FRONT_IMAGE:?LOL_FRONT_IMAGE is required}
+    container_name: lol-dev-front
+    restart: unless-stopped
+    user: "1001:1001"
+    read_only: true
+    init: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+      - /app/.next/cache:rw,noexec,nosuid,nodev,size=64m
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    ports:
+      - "127.0.0.1:23000:3000"
+    networks:
+      - lol_dev_net
+
+volumes:
+  lol_dev_mysql_data:
+    name: lol_dev_mysql_data
+
+networks:
+  lol_dev_net:
+    name: lol_dev_net
+    driver: bridge

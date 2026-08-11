@@ -1,0 +1,529 @@
+name: Dev 프론트 빌드 및 스택 배포
+
+on:
+  push:
+    branches: ["develop"]
+  workflow_dispatch:
+
+concurrency:
+  group: dev-frontend-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/carrotbat410/lol-team-balance-tool-front
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04-arm
+    environment: development
+
+    steps:
+      - name: develop 브랜치 확인
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/develop" ]]; then
+            echo "Dev 배포는 develop 브랜치에서만 실행할 수 있습니다." >&2
+            exit 1
+          fi
+
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+
+      - name: GHCR 로그인
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dev 프론트 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api
+          tags: |
+            ${{ env.IMAGE_NAME }}:dev
+            ${{ env.IMAGE_NAME }}:dev-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: development
+    env:
+      DEV_SERVER_HOST: ${{ secrets.DEV_SERVER_HOST }}
+      DEV_SERVER_USER: ${{ secrets.DEV_SERVER_USER }}
+      DEV_SERVER_PORT: ${{ secrets.DEV_SERVER_PORT }}
+      DEV_SERVER_SSH_KEY: ${{ secrets.DEV_SERVER_SSH_KEY }}
+      DEV_SERVER_KNOWN_HOSTS: ${{ secrets.DEV_SERVER_KNOWN_HOSTS }}
+      DEV_GHCR_USERNAME: ${{ secrets.DEV_GHCR_USERNAME }}
+      DEV_GHCR_TOKEN: ${{ secrets.DEV_GHCR_TOKEN }}
+      DEV_MYSQL_DATABASE: ${{ secrets.DEV_MYSQL_DATABASE }}
+      DEV_MYSQL_USER: ${{ secrets.DEV_MYSQL_USER }}
+      DEV_MYSQL_PASSWORD: ${{ secrets.DEV_MYSQL_PASSWORD }}
+      DEV_MYSQL_ROOT_PASSWORD: ${{ secrets.DEV_MYSQL_ROOT_PASSWORD }}
+      DEV_SPRING_DATASOURCE_URL: ${{ secrets.DEV_SPRING_DATASOURCE_URL }}
+      DEV_SPRING_DATASOURCE_USERNAME: ${{ secrets.DEV_SPRING_DATASOURCE_USERNAME }}
+      DEV_SPRING_DATASOURCE_PASSWORD: ${{ secrets.DEV_SPRING_DATASOURCE_PASSWORD }}
+      DEV_SPRING_JWT_SECRET: ${{ secrets.DEV_SPRING_JWT_SECRET }}
+      DEV_RIOT_API_BASEURL_KR: ${{ secrets.DEV_RIOT_API_BASEURL_KR }}
+      DEV_RIOT_API_BASEURL_ASIA: ${{ secrets.DEV_RIOT_API_BASEURL_ASIA }}
+      DEV_RIOT_API_KEY: ${{ secrets.DEV_RIOT_API_KEY }}
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 배포 secret 검증 및 후보 파일 생성
+        id: candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required_single_line=(
+            DEV_SERVER_HOST DEV_SERVER_USER DEV_SERVER_PORT
+            DEV_MYSQL_DATABASE DEV_MYSQL_USER DEV_MYSQL_PASSWORD
+            DEV_MYSQL_ROOT_PASSWORD DEV_SPRING_DATASOURCE_URL
+            DEV_SPRING_DATASOURCE_USERNAME DEV_SPRING_DATASOURCE_PASSWORD
+            DEV_SPRING_JWT_SECRET DEV_RIOT_API_BASEURL_KR
+            DEV_RIOT_API_BASEURL_ASIA DEV_RIOT_API_KEY
+          )
+          for name in "${required_single_line[@]}"; do
+            value="${!name-}"
+            if [[ -z "$value" ]]; then
+              echo "필수 secret이 비어 있습니다: $name" >&2
+              exit 1
+            fi
+            if [[ "$value" == *$'\r'* || "$value" == *$'\n'* ]]; then
+              echo "CR/LF를 포함한 secret은 허용되지 않습니다: $name" >&2
+              exit 1
+            fi
+          done
+
+          for name in DEV_SERVER_SSH_KEY DEV_SERVER_KNOWN_HOSTS; do
+            value="${!name-}"
+            if [[ -z "$value" ]]; then
+              echo "필수 secret이 비어 있습니다: $name" >&2
+              exit 1
+            fi
+            if [[ "$value" == *$'\r'* ]]; then
+              echo "CR을 포함한 SSH secret은 허용되지 않습니다: $name" >&2
+              exit 1
+            fi
+          done
+
+          if [[ ! "$DEV_SERVER_HOST" =~ ^[A-Za-z0-9._:-]+$ ]]; then
+            echo "DEV_SERVER_HOST 형식이 올바르지 않습니다." >&2
+            exit 1
+          fi
+          if [[ ! "$DEV_SERVER_USER" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "DEV_SERVER_USER 형식이 올바르지 않습니다." >&2
+            exit 1
+          fi
+          if [[ "$DEV_SERVER_USER" != "ubuntu" ]]; then
+            echo "Dev 배포 경로는 ubuntu 사용자 전용입니다." >&2
+            exit 1
+          fi
+          if [[ ! "$DEV_SERVER_PORT" =~ ^[0-9]+$ ]] || (( DEV_SERVER_PORT < 1 || DEV_SERVER_PORT > 65535 )); then
+            echo "DEV_SERVER_PORT 형식이 올바르지 않습니다." >&2
+            exit 1
+          fi
+
+          if [[ -n "$DEV_GHCR_USERNAME" || -n "$DEV_GHCR_TOKEN" ]]; then
+            if [[ -z "$DEV_GHCR_USERNAME" || -z "$DEV_GHCR_TOKEN" ]]; then
+              echo "DEV_GHCR_USERNAME과 DEV_GHCR_TOKEN은 함께 설정해야 합니다." >&2
+              exit 1
+            fi
+            for name in DEV_GHCR_USERNAME DEV_GHCR_TOKEN; do
+              value="${!name}"
+              if [[ "$value" == *$'\r'* || "$value" == *$'\n'* ]]; then
+                echo "CR/LF를 포함한 secret은 허용되지 않습니다: $name" >&2
+                exit 1
+              fi
+            done
+          fi
+
+          candidate_dir="$RUNNER_TEMP/lol-dev-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          install -m 700 -d "$candidate_dir"
+          install -m 600 /dev/null "$candidate_dir/.env"
+          install -m 600 /dev/null "$candidate_dir/ghcr-username"
+          install -m 600 /dev/null "$candidate_dir/ghcr-token"
+
+          dotenv_write() {
+            local key="$1"
+            local value="${!1}"
+            local escaped=""
+            while [[ "$value" == *"'"* ]]; do
+              escaped+="${value%%\'*}\\'"
+              value="${value#*\'}"
+            done
+            escaped+="$value"
+            printf "%s='%s'\n" "$key" "$escaped" >> "$candidate_dir/.env"
+          }
+
+          printf "LOL_FRONT_IMAGE='%s'\n" \
+            "${IMAGE_NAME}:dev-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            >> "$candidate_dir/.env"
+          printf "LOL_BACK_IMAGE=''\n" >> "$candidate_dir/.env"
+          for name in DEV_MYSQL_DATABASE DEV_MYSQL_USER DEV_MYSQL_PASSWORD \
+            DEV_MYSQL_ROOT_PASSWORD DEV_SPRING_DATASOURCE_URL \
+            DEV_SPRING_DATASOURCE_USERNAME DEV_SPRING_DATASOURCE_PASSWORD \
+            DEV_SPRING_JWT_SECRET DEV_RIOT_API_BASEURL_KR \
+            DEV_RIOT_API_BASEURL_ASIA DEV_RIOT_API_KEY; do
+            dotenv_write "$name"
+          done
+
+          printf '%s' "$DEV_GHCR_USERNAME" > "$candidate_dir/ghcr-username"
+          printf '%s' "$DEV_GHCR_TOKEN" > "$candidate_dir/ghcr-token"
+          echo "dir=$candidate_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Runner 후보 compose 검증
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
+            echo "Docker Compose가 runner에 없어 Dev 후보 설정을 검증할 수 없습니다." >&2
+            exit 1
+          fi
+          docker compose \
+            --env-file "${{ steps.candidates.outputs.dir }}/.env" \
+            -f deploy/dev/docker-compose.yml config --quiet
+
+      - name: SSH 설정
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$RUNNER_TEMP/lol-dev-ssh"
+          install -m 600 /dev/null "$RUNNER_TEMP/lol-dev-ssh/id_key"
+          install -m 600 /dev/null "$RUNNER_TEMP/lol-dev-ssh/known_hosts"
+          printf '%s\n' "$DEV_SERVER_SSH_KEY" > "$RUNNER_TEMP/lol-dev-ssh/id_key"
+          printf '%s\n' "$DEV_SERVER_KNOWN_HOSTS" > "$RUNNER_TEMP/lol-dev-ssh/known_hosts"
+          ssh-keygen -y -f "$RUNNER_TEMP/lol-dev-ssh/id_key" >/dev/null
+          ssh-keygen -l -f "$RUNNER_TEMP/lol-dev-ssh/known_hosts" >/dev/null
+
+      - name: 원격 인프라 도구 사전 확인
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$DEV_SERVER_PORT" \
+            -i "$RUNNER_TEMP/lol-dev-ssh/id_key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/lol-dev-ssh/known_hosts" \
+            -o StrictHostKeyChecking=yes \
+            "$DEV_SERVER_USER@$DEV_SERVER_HOST" 'set -eu; for tool in docker nginx flock curl install find; do command -v "$tool" >/dev/null 2>&1 || { echo "필수 인프라 도구가 없습니다: $tool" >&2; exit 1; }; done; sudo docker compose version >/dev/null; sudo nginx -t >/dev/null'
+
+      - name: Dev 후보 파일 전송
+        id: remote
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote_stage="/home/ubuntu/lol-team-balance-dev/.staging-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          ssh_opts=(
+            -p "$DEV_SERVER_PORT"
+            -i "$RUNNER_TEMP/lol-dev-ssh/id_key"
+            -o UserKnownHostsFile="$RUNNER_TEMP/lol-dev-ssh/known_hosts"
+            -o StrictHostKeyChecking=yes
+          )
+          scp_opts=(
+            -P "$DEV_SERVER_PORT"
+            -i "$RUNNER_TEMP/lol-dev-ssh/id_key"
+            -o UserKnownHostsFile="$RUNNER_TEMP/lol-dev-ssh/known_hosts"
+            -o StrictHostKeyChecking=yes
+          )
+          ssh "${ssh_opts[@]}" "$DEV_SERVER_USER@$DEV_SERVER_HOST" \
+            "install -m 700 -d '$remote_stage'"
+          scp "${scp_opts[@]}" \
+            deploy/dev/docker-compose.yml \
+            deploy/dev/nginx/lol-team-balance-dev.conf \
+            "$DEV_SERVER_USER@$DEV_SERVER_HOST:$remote_stage/"
+          scp "${scp_opts[@]}" \
+            "${{ steps.candidates.outputs.dir }}/.env" \
+            "$DEV_SERVER_USER@$DEV_SERVER_HOST:$remote_stage/env.candidate"
+          scp "${scp_opts[@]}" \
+            "${{ steps.candidates.outputs.dir }}/ghcr-username" \
+            "${{ steps.candidates.outputs.dir }}/ghcr-token" \
+            "$DEV_SERVER_USER@$DEV_SERVER_HOST:$remote_stage/"
+          ssh "${ssh_opts[@]}" "$DEV_SERVER_USER@$DEV_SERVER_HOST" \
+            "chmod 600 '$remote_stage/env.candidate' '$remote_stage/ghcr-username' '$remote_stage/ghcr-token'"
+          echo "stage=$remote_stage" >> "$GITHUB_OUTPUT"
+
+      - name: Dev 스택 및 host Nginx 배포
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "$DEV_SERVER_PORT" \
+            -i "$RUNNER_TEMP/lol-dev-ssh/id_key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/lol-dev-ssh/known_hosts" \
+            -o StrictHostKeyChecking=yes \
+            "$DEV_SERVER_USER@$DEV_SERVER_HOST" \
+            "flock -x /home/ubuntu/lol-team-balance-dev/.deploy.lock bash -s -- '${{ steps.remote.outputs.stage }}'" <<'REMOTE'
+          set -euo pipefail
+          stage="$1"
+          stack=/home/ubuntu/lol-team-balance-dev
+          compose_candidate="$stage/docker-compose.yml"
+          env_candidate="$stage/env.candidate"
+          nginx_candidate="$stage/lol-team-balance-dev.conf"
+          compose_backup="$stack/docker-compose.yml.previous"
+          env_backup="$stack/.env.previous"
+          activated=false
+          deployment_succeeded=false
+          had_compose=false
+          had_env=false
+          front_existed=false
+          front_running=false
+          mysql_existed=false
+          mysql_running=false
+          nginx_target=/etc/nginx/conf.d/lol-team-balance-dev.conf
+          nginx_backup=/etc/nginx/conf.d/.lol-team-balance-dev.conf.previous
+          nginx_had_target=false
+          nginx_activated=false
+          docker_config="$stage/docker-config"
+
+          rollback_and_cleanup() {
+            exit_status=$?
+            set +e
+            if [[ "$activated" == true && "$deployment_succeeded" != true ]]; then
+              rollback_front_healthy=true
+              if [[ "$nginx_activated" == true ]]; then
+                if [[ "$nginx_had_target" == true ]] && sudo test -f "$nginx_backup"; then
+                  sudo install -m 644 "$nginx_backup" "/etc/nginx/conf.d/.lol-team-balance-dev.conf.rollback.$$"
+                  sudo mv "/etc/nginx/conf.d/.lol-team-balance-dev.conf.rollback.$$" "$nginx_target"
+                else
+                  sudo rm -f "$nginx_target"
+                fi
+                if sudo nginx -t >/dev/null 2>&1; then
+                  sudo systemctl reload nginx >/dev/null 2>&1 || true
+                fi
+              fi
+
+              if [[ "$had_compose" == true ]]; then
+                install -m 644 "$compose_backup" "$stack/.docker-compose.yml.rollback.$$"
+                mv "$stack/.docker-compose.yml.rollback.$$" "$stack/docker-compose.yml"
+              else
+                rm -f "$stack/docker-compose.yml"
+              fi
+              if [[ "$had_env" == true ]]; then
+                install -m 600 "$env_backup" "$stack/.env.rollback.$$"
+                mv "$stack/.env.rollback.$$" "$stack/.env"
+              else
+                rm -f "$stack/.env"
+              fi
+
+              if [[ "$front_existed" == true && "$had_compose" == true && "$had_env" == true ]]; then
+                cd "$stack"
+                front_restored=true
+                sudo docker compose up -d --no-deps lol-dev-front >/dev/null || front_restored=false
+                if [[ "$front_running" == true ]]; then
+                  rollback_front_healthy=false
+                  if [[ "$front_restored" == true ]]; then
+                    for _ in $(seq 1 24); do
+                      if curl --fail --silent --show-error --max-time 5 \
+                        http://127.0.0.1:23000/ >/dev/null; then
+                        rollback_front_healthy=true
+                        break
+                      fi
+                      sleep 5
+                    done
+                  fi
+                  if [[ "$rollback_front_healthy" != true ]]; then
+                    echo "이전 compose/.env 파일은 복원했지만 Front rollback health 실패가 발생했습니다." >&2
+                  fi
+                else
+                  sudo docker stop lol-dev-front >/dev/null
+                fi
+              elif [[ "$front_existed" != true ]]; then
+                sudo docker rm -f lol-dev-front >/dev/null 2>&1 || true
+              fi
+
+              if [[ "$mysql_existed" == true && "$mysql_running" != true ]]; then
+                sudo docker stop lol-dev-mysql >/dev/null 2>&1 || true
+              elif [[ "$mysql_existed" != true ]]; then
+                sudo docker rm -f lol-dev-mysql >/dev/null 2>&1 || true
+              fi
+              rm -f "$compose_backup" "$env_backup"
+              sudo rm -f "$nginx_backup"
+              echo "Dev 스택 배포 실패로 이전 compose/.env와 프론트 상태를 복원했습니다." >&2
+            fi
+            sudo rm -rf "$stage"
+            exit "$exit_status"
+          }
+          trap rollback_and_cleanup EXIT
+
+          if [[ "$stage" != "$stack"/.staging-* ]]; then
+            echo "허용되지 않은 staging 경로입니다." >&2
+            exit 1
+          fi
+          find "$stack" -mindepth 1 -maxdepth 1 -type d -name '.staging-*' \
+            ! -path "$stage" -mmin +1440 -exec sudo rm -rf -- {} +
+          for file in "$compose_candidate" "$env_candidate" "$nginx_candidate"; do
+            [[ -s "$file" ]] || { echo "후보 파일이 없거나 비어 있습니다: $file" >&2; exit 1; }
+          done
+
+          if [[ -f "$stack/.env" ]]; then
+            existing_back_line="$(grep -m1 '^LOL_BACK_IMAGE=' "$stack/.env" || true)"
+            if [[ -n "$existing_back_line" ]]; then
+              awk -v replacement="$existing_back_line" '
+                /^LOL_BACK_IMAGE=/ { print replacement; replaced=1; next }
+                { print }
+                END { if (!replaced) print replacement }
+              ' "$env_candidate" > "$stage/env.preserved"
+              chmod 600 "$stage/env.preserved"
+              mv "$stage/env.preserved" "$env_candidate"
+            fi
+          fi
+
+          sudo docker compose --env-file "$env_candidate" -f "$compose_candidate" config --quiet
+
+          nginx_test="$stage/nginx-test.conf"
+          printf 'pid %s/nginx.pid;\nerror_log /dev/stderr;\nevents {}\nhttp { access_log off; include /etc/nginx/mime.types; include %s; }\n' \
+            "$stage" "$nginx_candidate" > "$nginx_test"
+          sudo nginx -t -c "$nginx_test" -p / >/dev/null
+
+          install -m 700 -d "$docker_config"
+          if [[ -s "$stage/ghcr-username" && -s "$stage/ghcr-token" ]]; then
+            cat "$stage/ghcr-token" | sudo env DOCKER_CONFIG="$docker_config" docker login ghcr.io \
+              --username "$(cat "$stage/ghcr-username")" --password-stdin >/dev/null
+          fi
+
+          if [[ -f "$stack/docker-compose.yml" ]]; then
+            had_compose=true
+            install -m 644 "$stack/docker-compose.yml" "$stack/.docker-compose.yml.previous.new.$$"
+            mv "$stack/.docker-compose.yml.previous.new.$$" "$compose_backup"
+          else
+            rm -f "$compose_backup"
+          fi
+          if [[ -f "$stack/.env" ]]; then
+            had_env=true
+            install -m 600 "$stack/.env" "$stack/.env.previous.new.$$"
+            mv "$stack/.env.previous.new.$$" "$env_backup"
+          else
+            rm -f "$env_backup"
+          fi
+          if sudo docker inspect lol-dev-front >/dev/null 2>&1; then
+            front_existed=true
+            front_running="$(sudo docker inspect --format '{{.State.Running}}' lol-dev-front)"
+          fi
+          if sudo docker inspect lol-dev-mysql >/dev/null 2>&1; then
+            mysql_existed=true
+            mysql_running="$(sudo docker inspect --format '{{.State.Running}}' lol-dev-mysql)"
+            db_keys=(
+              DEV_MYSQL_DATABASE DEV_MYSQL_USER DEV_MYSQL_PASSWORD
+              DEV_MYSQL_ROOT_PASSWORD DEV_SPRING_DATASOURCE_URL
+              DEV_SPRING_DATASOURCE_USERNAME DEV_SPRING_DATASOURCE_PASSWORD
+            )
+            for key in "${db_keys[@]}"; do
+              current_line="$(grep -m1 "^${key}=" "$stack/.env" 2>/dev/null || true)"
+              candidate_line="$(grep -m1 "^${key}=" "$env_candidate" || true)"
+              if [[ -z "$current_line" || "$current_line" != "$candidate_line" ]]; then
+                echo "기존 Dev MySQL과 DB 설정이 다릅니다: $key" >&2
+                echo "DB credential 회전은 별도 수동 절차로 수행해야 합니다." >&2
+                exit 1
+              fi
+            done
+          fi
+
+          install -m 644 "$compose_candidate" "$stack/.docker-compose.yml.new.$$"
+          install -m 600 "$env_candidate" "$stack/.env.new.$$"
+          mv "$stack/.docker-compose.yml.new.$$" "$stack/docker-compose.yml"
+          mv "$stack/.env.new.$$" "$stack/.env"
+          chmod 600 "$stack/.env"
+          activated=true
+
+          cd "$stack"
+          if ! sudo env DOCKER_CONFIG="$docker_config" docker compose pull lol-dev-front; then
+            echo "Dev 이미지를 pull하지 못했습니다. private GHCR이면 DEV_GHCR_USERNAME/DEV_GHCR_TOKEN을 설정하세요." >&2
+            exit 1
+          fi
+
+          if [[ "$mysql_existed" == true ]]; then
+            if [[ "$mysql_running" == true ]]; then
+              mysql_ready=false
+              for _ in $(seq 1 24); do
+                if [[ "$(sudo docker inspect --format '{{.State.Health.Status}}' lol-dev-mysql 2>/dev/null || true)" == healthy ]]; then
+                  mysql_ready=true
+                  break
+                fi
+                sleep 5
+              done
+              [[ "$mysql_ready" == true ]] || { echo "기존 Dev MySQL health check가 실패했습니다." >&2; exit 1; }
+            else
+              echo "기존 Dev MySQL이 중지 상태이므로 상태를 유지합니다."
+            fi
+          else
+            if ! sudo docker compose pull lol-dev-mysql; then
+              echo "Dev MySQL 이미지를 pull하지 못했습니다." >&2
+              exit 1
+            fi
+            sudo docker compose up -d lol-dev-mysql
+            mysql_ready=false
+            for _ in $(seq 1 24); do
+              if [[ "$(sudo docker inspect --format '{{.State.Health.Status}}' lol-dev-mysql 2>/dev/null || true)" == healthy ]]; then
+                mysql_ready=true
+                break
+              fi
+              sleep 5
+            done
+            [[ "$mysql_ready" == true ]] || { echo "Dev MySQL health check가 실패했습니다." >&2; exit 1; }
+          fi
+
+          sudo docker compose up -d --no-deps lol-dev-front
+          front_ready=false
+          for _ in $(seq 1 24); do
+            if curl --fail --silent --show-error --max-time 5 http://127.0.0.1:23000/ >/dev/null; then
+              front_ready=true
+              break
+            fi
+            sleep 5
+          done
+          [[ "$front_ready" == true ]] || { echo "Dev 프론트 health check가 실패했습니다." >&2; exit 1; }
+
+          if sudo test -f "$nginx_target"; then
+            nginx_had_target=true
+            sudo install -m 644 "$nginx_target" "/etc/nginx/conf.d/.lol-team-balance-dev.conf.previous.new.$$"
+            sudo mv "/etc/nginx/conf.d/.lol-team-balance-dev.conf.previous.new.$$" "$nginx_backup"
+          else
+            sudo rm -f "$nginx_backup"
+          fi
+          sudo install -m 644 "$nginx_candidate" "/etc/nginx/conf.d/.lol-team-balance-dev.conf.new.$$"
+          sudo mv "/etc/nginx/conf.d/.lol-team-balance-dev.conf.new.$$" "$nginx_target"
+          nginx_activated=true
+          if ! sudo nginx -t; then
+            echo "host Nginx 검증이 실패했습니다." >&2
+            exit 1
+          fi
+          if ! sudo systemctl reload nginx; then
+            echo "host Nginx reload가 실패했습니다." >&2
+            exit 1
+          fi
+          deployment_succeeded=true
+          rm -f "$compose_backup" "$env_backup"
+          sudo rm -f "$nginx_backup"
+          REMOTE
+
+      - name: Runner 및 원격 임시파일 정리
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          candidate_dir="$RUNNER_TEMP/lol-dev-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          ssh_dir="$RUNNER_TEMP/lol-dev-ssh"
+          remote_stage="/home/ubuntu/lol-team-balance-dev/.staging-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          if [[ -s "$ssh_dir/id_key" && -s "$ssh_dir/known_hosts" \
+            && -n "${DEV_SERVER_HOST:-}" && -n "${DEV_SERVER_USER:-}" \
+            && "${DEV_SERVER_PORT:-}" =~ ^[0-9]+$ ]]; then
+            ssh -p "$DEV_SERVER_PORT" \
+              -i "$ssh_dir/id_key" \
+              -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+              -o StrictHostKeyChecking=yes \
+              "$DEV_SERVER_USER@$DEV_SERVER_HOST" \
+              "sudo rm -rf '$remote_stage'" >/dev/null 2>&1 || true
+          fi
+          rm -rf -- "$candidate_dir" "$ssh_dir"
