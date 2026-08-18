@@ -58,9 +58,6 @@ export default function NavMenu() {
       {(isAdmin || isCommunityVisible) && (
         <li><Link href="/community">커뮤니티</Link></li>
       )}
-      {isAdmin && (
-        <li><Link href="/admin/users">회원관리</Link></li>
-      )}
     </ul>
   );
 }

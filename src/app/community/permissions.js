@@ -12,4 +12,4 @@ export const canManageCommunity = (role, isCommunityVisible) =>
 export const canWriteCommunity = (role, isCommunityVisible) =>
   isOperator(role) || ([ROLE_ADMIN, ROLE_USER].includes(role) && isCommunityVisible);
 export const canWriteNotice = isOperator;
-export const canDeleteAccount = (role) => !isOperator(role);
+export const canDeleteAccount = (role) => role === ROLE_USER;

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import API_BASE_URL from "../../utils/api";
 import { clearAuthState, getAuthToken } from "../../utils/auth";
-import { canManageRoles, ROLE_ADMIN, ROLE_OPERATOR, ROLE_USER } from "../../community/permissions";
+import { canManageRoles, isOperator, ROLE_ADMIN, ROLE_OPERATOR, ROLE_USER } from "../../community/permissions";
 
 const roleLabels = {
   ROLE_OPERATOR: "운영자",
@@ -48,6 +48,10 @@ export default function AdminUsersPage() {
     if (!token) {
       alert("관리자 로그인이 필요합니다.");
       router.push("/login");
+      return;
+    }
+    if (!isOperator(localStorage.getItem("role"))) {
+      router.replace("/community");
       return;
     }
 

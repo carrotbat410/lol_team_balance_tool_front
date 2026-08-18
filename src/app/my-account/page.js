@@ -7,6 +7,12 @@ import { canDeleteAccount } from '../community/permissions';
 
 export default function MyAccountPage() {
   const [username, setUsername] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleteFormOpen, setIsDeleteFormOpen] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -32,6 +38,88 @@ export default function MyAccountPage() {
     localStorage.removeItem('team1List');
     localStorage.removeItem('team2List');
     localStorage.removeItem('noTeamList');
+  };
+
+  const resetPasswordForm = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setNewPasswordConfirm('');
+    setPasswordError('');
+  };
+
+  const handlePasswordChange = async (event) => {
+    event.preventDefault();
+
+    if (isChangingPassword) {
+      return;
+    }
+
+    setPasswordError('');
+
+    if (!currentPassword || !newPassword || !newPasswordConfirm) {
+      setPasswordError('모든 비밀번호 항목을 입력해주세요.');
+      return;
+    }
+
+    const newPasswordLength = Array.from(newPassword).length;
+    if (newPasswordLength < 6 || newPasswordLength > 72) {
+      setPasswordError('새 비밀번호는 6자 이상 72자 이하로 입력해주세요.');
+      return;
+    }
+
+    const utf8Encoder = new TextEncoder();
+    if (utf8Encoder.encode(newPassword).length > 72 || utf8Encoder.encode(newPasswordConfirm).length > 72) {
+      setPasswordError('새 비밀번호는 UTF-8 기준 72바이트 이하로 입력해주세요.');
+      return;
+    }
+
+    if (Object.is(currentPassword, newPassword)) {
+      setPasswordError('새 비밀번호는 현재 비밀번호와 달라야 합니다.');
+      return;
+    }
+
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordError('새 비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/account/password`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword, newPasswordConfirm }),
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        clearAuthState();
+        clearTeamState();
+        window.dispatchEvent(new Event('auth-change'));
+        router.push('/login');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        setPasswordError(errorBody?.message || '비밀번호 변경 중 오류가 발생했습니다.');
+        return;
+      }
+
+      resetPasswordForm();
+      clearAuthState();
+      clearTeamState();
+      window.dispatchEvent(new Event('auth-change'));
+      alert('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
+      router.push('/login');
+    } catch (error) {
+      setPasswordError('서버와 연결할 수 없습니다.');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const handleDeleteAccount = async (event) => {
@@ -97,12 +185,74 @@ export default function MyAccountPage() {
         </div>
         <div className="info-item">
           <span className="info-label">비밀번호</span>
-          <button className="change-password-btn" onClick={() => alert('현재 개발중인 기능입니다.')}>비밀번호 변경</button>
+          <button
+            type="button"
+            className="change-password-btn"
+            aria-expanded={isPasswordFormOpen}
+            aria-controls="password-change-form"
+            onClick={() => {
+              if (isPasswordFormOpen) {
+                resetPasswordForm();
+              }
+              setIsPasswordFormOpen(!isPasswordFormOpen);
+            }}
+            disabled={isChangingPassword}
+          >
+            {isPasswordFormOpen ? '변경 취소' : '비밀번호 변경'}
+          </button>
         </div>
+        {isPasswordFormOpen && (
+          <form id="password-change-form" className="password-change-form" onSubmit={handlePasswordChange}>
+            <label htmlFor="current-password">현재 비밀번호</label>
+            <input
+              id="current-password"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              disabled={isChangingPassword}
+            />
+            <label htmlFor="new-password">새 비밀번호</label>
+            <input
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              disabled={isChangingPassword}
+            />
+            <label htmlFor="new-password-confirm">새 비밀번호 확인</label>
+            <input
+              id="new-password-confirm"
+              type="password"
+              autoComplete="new-password"
+              value={newPasswordConfirm}
+              onChange={(event) => setNewPasswordConfirm(event.target.value)}
+              disabled={isChangingPassword}
+            />
+            {passwordError && <div className="password-change-error">{passwordError}</div>}
+            <div className="password-change-form-actions">
+              <button
+                type="button"
+                className="cancel-password-change-btn"
+                onClick={() => {
+                  resetPasswordForm();
+                  setIsPasswordFormOpen(false);
+                }}
+                disabled={isChangingPassword}
+              >
+                취소
+              </button>
+              <button className="confirm-password-change-btn" type="submit" disabled={isChangingPassword}>
+                {isChangingPassword ? '변경 중...' : '변경하기'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
       {role !== null && <div className="account-actions">
         {!canDeleteAccount(role) ? (
-          <p className="admin-muted">운영자 계정은 회원 탈퇴를 할 수 없습니다.</p>
+          <p className="admin-muted">관리자 및 운영자 계정은 회원 탈퇴를 할 수 없습니다.</p>
         ) : !isDeleteFormOpen ? (
           <button className="delete-account-btn" onClick={() => setIsDeleteFormOpen(true)}>회원 탈퇴</button>
         ) : (

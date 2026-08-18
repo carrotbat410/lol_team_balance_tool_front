@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import API_BASE_URL from "../../utils/api";
 import { clearAuthState, getAuthToken } from "../../utils/auth";
+import { isOperator } from "../../community/permissions";
 
 const formatDateLabel = (dateText) => {
   const [, month, day] = dateText.split("-");
@@ -46,6 +47,10 @@ export default function AdminVisitorsPage() {
     if (!token) {
       alert("관리자 로그인이 필요합니다.");
       router.push("/login");
+      return;
+    }
+    if (!isOperator(localStorage.getItem("role"))) {
+      router.replace("/community");
       return;
     }
 
