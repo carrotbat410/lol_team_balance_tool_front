@@ -4,7 +4,13 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import API_BASE_URL from "../../utils/api";
-import { clearAuthState, getAuthToken, isStoredLoginActive } from "../../utils/auth";
+import {
+  clearAuthState,
+  getAuthToken,
+  isStoredLoginActive,
+} from "../../utils/auth";
+import { COMMUNITY_CATEGORIES, WRITABLE_MEMBER_CATEGORIES } from "../community";
+import { canWriteCommunity, canWriteNotice, hasAdminAccess } from "../permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,20 +20,24 @@ const emptyForm = {
   content: "",
 };
 
+const communityCategoryValues = COMMUNITY_CATEGORIES.map((category) => category.value);
+
 function CommunityWriteForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const postNo = searchParams.get("postNo");
-  const requestedCategory = searchParams.get("category") || "RECRUIT";
+  const categoryQuery = searchParams.get("category");
+  const requestedCategory = communityCategoryValues.includes(categoryQuery) ? categoryQuery : "RECRUIT";
   const [form, setForm] = useState({ ...emptyForm, category: requestedCategory });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState("");
+  const [isCommunityVisible, setIsCommunityVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(Boolean(postNo));
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const storedIsLoggedIn = isStoredLoginActive();
-    const storedIsAdmin = storedIsLoggedIn && localStorage.getItem("role") === "ROLE_ADMIN";
+    const storedRole = storedIsLoggedIn ? localStorage.getItem("role") || "" : "";
 
     if (!storedIsLoggedIn) {
       alert("글쓰기는 로그인이 필요합니다.");
@@ -35,16 +45,9 @@ function CommunityWriteForm() {
       return;
     }
 
-    setIsAdmin(storedIsAdmin);
+    setRole(storedRole);
     const storedUsername = localStorage.getItem("username") || "";
-
-    if (!storedIsAdmin && requestedCategory === "NOTICE" && !postNo) {
-      setForm((prev) => ({ ...prev, category: "RECRUIT" }));
-    }
-
-    if (postNo) {
-      loadPost(storedIsAdmin, storedUsername);
-    }
+    initializePage(storedRole, storedUsername);
   }, [postNo]);
 
   const getAuthHeaders = () => {
@@ -65,7 +68,39 @@ function CommunityWriteForm() {
     router.push("/login");
   };
 
-  const loadPost = async (adminAccess, currentUsername) => {
+  const initializePage = async (storedRole, storedUsername) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/community/settings`);
+      if (!response.ok) {
+        throw new Error("커뮤니티 설정을 불러오지 못했습니다.");
+      }
+
+      const result = await response.json();
+      const visibleToUsers = Boolean(result.data?.visibleToUsers);
+      setIsCommunityVisible(visibleToUsers);
+
+      if (!canWriteCommunity(storedRole, visibleToUsers)) {
+        setError("비공개 커뮤니티에서는 운영자만 글을 작성하거나 수정할 수 있습니다.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (!canWriteNotice(storedRole) && requestedCategory === "NOTICE" && !postNo) {
+        setForm((prev) => ({ ...prev, category: "RECRUIT" }));
+      }
+
+      if (postNo) {
+        await loadPost(hasAdminAccess(storedRole), storedUsername, storedRole);
+      } else {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError(err.message || "글쓰기 화면을 준비하지 못했습니다.");
+      setIsLoading(false);
+    }
+  };
+
+  const loadPost = async (adminAccess, currentUsername, currentRole) => {
     const headers = getAuthHeaders();
     if (!headers) {
       handleAuthError();
@@ -96,8 +131,11 @@ function CommunityWriteForm() {
 
       const result = await response.json();
       const post = result.data;
-      if (!adminAccess && (post.category !== "RECRUIT" || post.writerId !== currentUsername)) {
-        throw new Error("본인이 작성한 내전모집 글만 수정할 수 있습니다.");
+      if (!adminAccess && (!WRITABLE_MEMBER_CATEGORIES.includes(post.category) || post.writerId !== currentUsername)) {
+        throw new Error("본인이 작성한 내전모집 또는 클랜홍보 글만 수정할 수 있습니다.");
+      }
+      if (post.category === "NOTICE" && !canWriteNotice(currentRole)) {
+        throw new Error("공지사항은 운영자만 수정할 수 있습니다.");
       }
 
       setForm({
@@ -121,8 +159,23 @@ function CommunityWriteForm() {
       return;
     }
 
-    if (!isAdmin && form.category !== "RECRUIT") {
-      setError("일반 사용자는 내전모집 글만 작성할 수 있습니다.");
+    if (!canWriteCommunity(role, isCommunityVisible)) {
+      setError("게시글을 저장할 권한이 없습니다.");
+      return;
+    }
+
+    if (!communityCategoryValues.includes(form.category)) {
+      setError("올바른 카테고리를 선택해주세요.");
+      return;
+    }
+
+    if (form.category === "NOTICE" && !canWriteNotice(role)) {
+      setError("공지사항은 운영자만 작성하거나 수정할 수 있습니다.");
+      return;
+    }
+
+    if (!hasAdminAccess(role) && !WRITABLE_MEMBER_CATEGORIES.includes(form.category)) {
+      setError("일반 사용자는 내전모집 또는 클랜홍보 글만 작성할 수 있습니다.");
       return;
     }
 
@@ -130,7 +183,7 @@ function CommunityWriteForm() {
     setError("");
 
     try {
-      const endpointBase = isAdmin ? `${API_BASE_URL}/admin/community/posts` : `${API_BASE_URL}/community/posts`;
+      const endpointBase = hasAdminAccess(role) ? `${API_BASE_URL}/admin/community/posts` : `${API_BASE_URL}/community/posts`;
       const response = await fetch(postNo ? `${endpointBase}/${postNo}` : endpointBase, {
         method: postNo ? "PATCH" : "POST",
         headers,
@@ -168,6 +221,15 @@ function CommunityWriteForm() {
     );
   }
 
+  if (!canWriteCommunity(role, isCommunityVisible)) {
+    return (
+      <section className="community-write-page">
+        <p className="admin-error">{error || "게시글을 작성하거나 수정할 권한이 없습니다."}</p>
+        <Link className="community-secondary-link" href="/community">목록</Link>
+      </section>
+    );
+  }
+
   return (
     <section className="community-write-page">
       <div className="community-detail-actions">
@@ -182,11 +244,12 @@ function CommunityWriteForm() {
         <select
           id="community-category"
           value={form.category}
-          disabled={!isAdmin || isSaving}
+          disabled={isSaving}
           onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
         >
           <option value="RECRUIT">내전모집</option>
-          {isAdmin && <option value="NOTICE">공지사항</option>}
+          <option value="CLAN_PROMOTION">클랜홍보</option>
+          {canWriteNotice(role) && <option value="NOTICE">공지사항</option>}
         </select>
 
         <label htmlFor="community-title">제목</label>

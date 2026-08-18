@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import API_BASE_URL from '../utils/api';
 import { clearAuthState, getAuthToken, isStoredLoginActive } from '../utils/auth';
+import { canDeleteAccount } from '../community/permissions';
 
 export default function MyAccountPage() {
   const [username, setUsername] = useState('');
@@ -10,6 +11,7 @@ export default function MyAccountPage() {
   const [isDeleteFormOpen, setIsDeleteFormOpen] = useState(false);
   const [deleteError, setDeleteError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [role, setRole] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -20,6 +22,7 @@ export default function MyAccountPage() {
     }
 
     const storedUsername = localStorage.getItem('username');
+    setRole(localStorage.getItem('role') || '');
     if (storedUsername) {
       setUsername(storedUsername);
     }
@@ -97,8 +100,10 @@ export default function MyAccountPage() {
           <button className="change-password-btn" onClick={() => alert('현재 개발중인 기능입니다.')}>비밀번호 변경</button>
         </div>
       </div>
-      <div className="account-actions">
-        {!isDeleteFormOpen ? (
+      {role !== null && <div className="account-actions">
+        {!canDeleteAccount(role) ? (
+          <p className="admin-muted">운영자 계정은 회원 탈퇴를 할 수 없습니다.</p>
+        ) : !isDeleteFormOpen ? (
           <button className="delete-account-btn" onClick={() => setIsDeleteFormOpen(true)}>회원 탈퇴</button>
         ) : (
           <form className="delete-account-form" onSubmit={handleDeleteAccount}>
@@ -133,7 +138,7 @@ export default function MyAccountPage() {
             </div>
           </form>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

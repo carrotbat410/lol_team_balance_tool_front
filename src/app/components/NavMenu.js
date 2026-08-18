@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import API_BASE_URL from "../utils/api";
 import { isStoredLoginActive } from "../utils/auth";
+import { hasAdminAccess } from "../community/permissions";
 
 export default function NavMenu() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -11,7 +12,7 @@ export default function NavMenu() {
 
   useEffect(() => {
     const syncRole = () => {
-      setIsAdmin(isStoredLoginActive() && localStorage.getItem("role") === "ROLE_ADMIN");
+      setIsAdmin(isStoredLoginActive() && hasAdminAccess(localStorage.getItem("role")));
     };
 
     const loadCommunitySetting = async () => {

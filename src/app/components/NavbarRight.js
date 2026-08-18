@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clearAuthState, isStoredLoginActive } from '../utils/auth';
+import { hasAdminAccess } from '../community/permissions';
 
 export default function NavbarRight() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -13,12 +14,12 @@ export default function NavbarRight() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsLoggedIn(isStoredLoginActive());
-      setIsAdmin(localStorage.getItem('role') === 'ROLE_ADMIN');
+      setIsAdmin(hasAdminAccess(localStorage.getItem('role')));
     }
 
     const syncLoginState = () => {
       setIsLoggedIn(isStoredLoginActive());
-      setIsAdmin(localStorage.getItem('role') === 'ROLE_ADMIN');
+      setIsAdmin(hasAdminAccess(localStorage.getItem('role')));
     };
 
     window.addEventListener('storage', syncLoginState);

@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import API_BASE_URL from "../../utils/api";
-import { clearAuthState, getAuthToken, isStoredLoginActive } from "../../utils/auth";
+import {
+  clearAuthState,
+  getAuthToken,
+  isStoredLoginActive,
+} from "../../utils/auth";
+import { getCommunityCategoryLabel, WRITABLE_MEMBER_CATEGORIES } from "../community";
+import { canManageCommunity, canWriteCommunity, hasAdminAccess, isOperator, ROLE_USER } from "../permissions";
 
 const MAX_VISIBLE_TITLE_LENGTH = 37;
 
@@ -42,7 +48,8 @@ export default function CommunityDetailPage() {
   const { postNo } = useParams();
   const router = useRouter();
   const [post, setPost] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState("");
+  const [isCommunityVisible, setIsCommunityVisible] = useState(false);
   const [username, setUsername] = useState("");
   const [comments, setComments] = useState([]);
   const [commentContent, setCommentContent] = useState("");
@@ -50,14 +57,17 @@ export default function CommunityDetailPage() {
   const [editingContent, setEditingContent] = useState("");
   const [isCommentSaving, setIsCommentSaving] = useState(false);
   const [commentError, setCommentError] = useState("");
+  const [postActionError, setPostActionError] = useState("");
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const storedIsLoggedIn = isStoredLoginActive();
-    setIsAdmin(storedIsLoggedIn && localStorage.getItem("role") === "ROLE_ADMIN");
+    const storedRole = storedIsLoggedIn ? localStorage.getItem("role") || "" : "";
+    setRole(storedRole);
     setUsername(localStorage.getItem("username") || "");
-    loadPost(storedIsLoggedIn && localStorage.getItem("role") === "ROLE_ADMIN");
+    initializePage(hasAdminAccess(storedRole));
   }, [postNo]);
 
   const getOptionalHeaders = () => {
@@ -110,6 +120,18 @@ export default function CommunityDetailPage() {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     };
+  };
+
+  const initializePage = async (adminAccess) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/community/settings`);
+      if (response.ok) {
+        const result = await response.json();
+        setIsCommunityVisible(Boolean(result.data?.visibleToUsers));
+      }
+    } finally {
+      await loadPost(adminAccess);
+    }
   };
 
   const loadComments = async () => {
@@ -286,8 +308,64 @@ export default function CommunityDetailPage() {
     }
   };
 
-  const canManagePost = post && (isAdmin || (post.category === "RECRUIT" && post.writerId === username));
+  const deletePost = async () => {
+    if (!window.confirm("게시글을 삭제할까요?")) {
+      return;
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) {
+      handleCommentAuthError();
+      return;
+    }
+
+    setIsDeletingPost(true);
+    setPostActionError("");
+
+    try {
+      const endpoint = hasAdminAccess(role)
+        ? `${API_BASE_URL}/admin/community/posts/${postNo}`
+        : `${API_BASE_URL}/community/posts/${postNo}`;
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        headers,
+      });
+
+      if (response.status === 401) {
+        handleCommentAuthError();
+        return;
+      }
+
+      if (response.status === 403) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.message || "게시글을 삭제할 권한이 없습니다.");
+      }
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.message || "게시글 삭제에 실패했습니다.");
+      }
+
+      router.push(`/community?category=${post.category}&page=1`);
+    } catch (err) {
+      setPostActionError(err.message || "게시글 삭제에 실패했습니다.");
+    } finally {
+      setIsDeletingPost(false);
+    }
+  };
+
+  const canManageAllContent = canManageCommunity(role, isCommunityVisible);
+  const canManagePost = post && (
+    (canManageAllContent && (post.category !== "NOTICE" || isOperator(role)))
+    || (
+      role === ROLE_USER
+      && isCommunityVisible
+      && WRITABLE_MEMBER_CATEGORIES.includes(post.category)
+      && post.writerId === username
+    )
+  );
   const isLoggedIn = Boolean(username) && isStoredLoginActive();
+  const canWriteComments = isLoggedIn && canWriteCommunity(role, isCommunityVisible);
 
   if (isLoading) {
     return (
@@ -311,12 +389,24 @@ export default function CommunityDetailPage() {
       <div className="community-detail-actions">
         <Link className="community-secondary-link" href={`/community?category=${post.category}&page=1`}>목록</Link>
         {canManagePost && (
-          <Link className="community-write-link" href={`/community/write?postNo=${post.no}`}>수정</Link>
+          <>
+            <Link className="community-write-link" href={`/community/write?postNo=${post.no}`}>수정</Link>
+            <button
+              type="button"
+              className="community-secondary-link"
+              disabled={isDeletingPost}
+              onClick={deletePost}
+            >
+              {isDeletingPost ? "삭제 중..." : "삭제"}
+            </button>
+          </>
         )}
       </div>
 
+      {postActionError && <p className="admin-error">{postActionError}</p>}
+
       <article className="community-detail-card">
-        <span>{post.category === "NOTICE" ? "공지사항" : "내전모집"}</span>
+        <span>{getCommunityCategoryLabel(post.category)}</span>
         <h1 title={post.title}>{formatCommunityTitle(post.title)}</h1>
         <div className="community-detail-meta">
           <span>글쓴이 {post.writerId}</span>
@@ -341,7 +431,8 @@ export default function CommunityDetailPage() {
             <p className="community-board-empty">아직 댓글이 없습니다.</p>
           ) : (
             comments.map((comment) => {
-              const canManageComment = isAdmin || comment.writerId === username;
+              const canManageComment = canManageAllContent
+                || (isCommunityVisible && role === ROLE_USER && comment.writerId === username);
 
               return (
                 <article className="community-comment-item" key={comment.no}>
@@ -387,22 +478,24 @@ export default function CommunityDetailPage() {
           )}
         </div>
 
-        <form className="community-comment-form" onSubmit={createComment}>
-          <label htmlFor="community-comment-content">댓글 작성</label>
-          <textarea
-            id="community-comment-content"
-            value={commentContent}
-            disabled={!isLoggedIn || isCommentSaving}
-            placeholder={isLoggedIn ? "댓글을 입력해주세요." : "로그인 후 댓글을 작성할 수 있습니다."}
-            onChange={(event) => setCommentContent(event.target.value)}
-            required
-          />
-          <div className="community-form-actions">
-            <button className="community-primary-btn" type="submit" disabled={!isLoggedIn || isCommentSaving}>
-              {isCommentSaving ? "저장 중..." : "댓글 저장"}
-            </button>
-          </div>
-        </form>
+        {canWriteComments && (
+          <form className="community-comment-form" onSubmit={createComment}>
+            <label htmlFor="community-comment-content">댓글 작성</label>
+            <textarea
+              id="community-comment-content"
+              value={commentContent}
+              disabled={isCommentSaving}
+              placeholder="댓글을 입력해주세요."
+              onChange={(event) => setCommentContent(event.target.value)}
+              required
+            />
+            <div className="community-form-actions">
+              <button className="community-primary-btn" type="submit" disabled={isCommentSaving}>
+                {isCommentSaving ? "저장 중..." : "댓글 저장"}
+              </button>
+            </div>
+          </form>
+        )}
       </section>
     </section>
   );

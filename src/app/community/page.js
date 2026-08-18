@@ -4,12 +4,13 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import API_BASE_URL from "../utils/api";
-import { clearAuthState, getAuthToken, isStoredLoginActive } from "../utils/auth";
-
-const categories = [
-  { value: "RECRUIT", label: "내전모집" },
-  { value: "NOTICE", label: "공지사항" },
-];
+import {
+  clearAuthState,
+  getAuthToken,
+  isStoredLoginActive,
+} from "../utils/auth";
+import { COMMUNITY_CATEGORIES, getCommunityCategoryLabel } from "./community";
+import { canManageCommunitySettings, canWriteCommunity, canWriteNotice, hasAdminAccess } from "./permissions";
 
 const MAX_VISIBLE_TITLE_LENGTH = 37;
 
@@ -48,7 +49,7 @@ function CommunityListPage() {
   const [posts, setPosts] = useState([]);
   const [notices, setNotices] = useState([]);
   const [pageInfo, setPageInfo] = useState({ page: 0, totalPages: 0, totalElements: 0 });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState("");
   const [isCommunityVisible, setIsCommunityVisible] = useState(false);
   const [noticeDisplayCount, setNoticeDisplayCount] = useState(2);
   const [isChecking, setIsChecking] = useState(true);
@@ -61,16 +62,17 @@ function CommunityListPage() {
   const currentPage = Number(searchParams.get("page") || "1");
   const safeCurrentPage = Number.isNaN(currentPage) || currentPage < 1 ? 1 : currentPage;
   const activeCategoryLabel = useMemo(
-    () => categories.find((category) => category.value === activeCategory)?.label || "내전모집",
+    () => getCommunityCategoryLabel(activeCategory) || "내전모집",
     [activeCategory]
   );
 
   useEffect(() => {
     const storedIsLoggedIn = isStoredLoginActive();
-    const storedIsAdmin = storedIsLoggedIn && localStorage.getItem("role") === "ROLE_ADMIN";
+    const storedRole = storedIsLoggedIn ? localStorage.getItem("role") || "" : "";
+    const storedHasAdminAccess = hasAdminAccess(storedRole);
 
-    setIsAdmin(storedIsAdmin);
-    loadCommunitySetting(storedIsAdmin);
+    setRole(storedRole);
+    loadCommunitySetting(storedHasAdminAccess);
   }, []);
 
   useEffect(() => {
@@ -132,7 +134,7 @@ function CommunityListPage() {
     setError("");
 
     try {
-      const endpoint = isAdmin ? `${API_BASE_URL}/admin/community/posts` : `${API_BASE_URL}/community/posts`;
+      const endpoint = hasAdminAccess(role) ? `${API_BASE_URL}/admin/community/posts` : `${API_BASE_URL}/community/posts`;
       const response = await fetch(
         `${endpoint}?category=${category}&page=${page - 1}&size=10`,
         getOptionalHeaders()
@@ -235,16 +237,22 @@ function CommunityListPage() {
     <section className="community-board-page">
       <div className="community-board-header">
         <div>
-          <span>{isAdmin ? "Admin Board" : "Community Board"}</span>
+          <span>{hasAdminAccess(role) ? "Admin Board" : "Community Board"}</span>
           <h1>커뮤니티</h1>
-          <p>공지사항과 내전모집 글을 게시판 형태로 확인할 수 있습니다.</p>
+          <p>공지사항, 내전모집, 클랜홍보 글을 게시판 형태로 확인할 수 있습니다.</p>
         </div>
-        <Link className="community-write-link" href={`/community/write?category=${activeCategory}`}>
-          글쓰기
-        </Link>
+        {(
+          activeCategory === "NOTICE"
+            ? canWriteNotice(role)
+            : canWriteCommunity(role, isCommunityVisible)
+        ) && (
+          <Link className="community-write-link" href={`/community/write?category=${activeCategory}`}>
+            글쓰기
+          </Link>
+        )}
       </div>
 
-      {isAdmin && (
+      {canManageCommunitySettings(role) && (
         <div className="community-board-setting">
           <div>
             <strong>커뮤니티 탭 공개</strong>
@@ -282,7 +290,7 @@ function CommunityListPage() {
 
       <div className="community-board-toolbar">
         <div className="community-board-tabs">
-          {categories.map((category) => (
+          {COMMUNITY_CATEGORIES.map((category) => (
             <button
               key={category.value}
               type="button"
@@ -329,7 +337,7 @@ function CommunityListPage() {
             <Link className="community-board-row" href={`/community/${post.no}`} key={post.no}>
               <span>{post.no}</span>
               <span>
-                <strong title={post.title}>[{post.category === "NOTICE" ? "공지사항" : "내전모집"}] {formatCommunityTitle(post.title)}</strong>
+                <strong title={post.title}>[{getCommunityCategoryLabel(post.category)}] {formatCommunityTitle(post.title)}</strong>
               </span>
               <span>{post.writerId}</span>
               <span>{formatDate(post.createdAt)}</span>

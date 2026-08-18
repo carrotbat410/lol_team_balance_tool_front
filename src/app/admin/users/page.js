@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import API_BASE_URL from "../../utils/api";
 import { clearAuthState, getAuthToken } from "../../utils/auth";
+import { canManageRoles, ROLE_ADMIN, ROLE_OPERATOR, ROLE_USER } from "../../community/permissions";
 
 const roleLabels = {
+  ROLE_OPERATOR: "운영자",
   ROLE_ADMIN: "관리자",
   ROLE_USER: "일반 회원",
 };
@@ -30,9 +32,14 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [updatingUserNo, setUpdatingUserNo] = useState(null);
+  const [currentRole] = useState(() => typeof window === "undefined" ? "" : localStorage.getItem("role") || "");
 
+  const operatorCount = useMemo(
+    () => users.filter((user) => user.role === ROLE_OPERATOR).length,
+    [users]
+  );
   const adminCount = useMemo(
-    () => users.filter((user) => user.role === "ROLE_ADMIN").length,
+    () => users.filter((user) => user.role === ROLE_ADMIN).length,
     [users]
   );
 
@@ -128,6 +135,7 @@ export default function AdminUsersPage() {
       setUsers((prevUsers) =>
         prevUsers.map((user) => (user.no === userNo ? result.data : user))
       );
+      alert("역할을 변경했습니다. 대상 사용자는 다시 로그인해야 변경된 역할이 적용됩니다.");
     } catch (err) {
       setError(err.message || "권한 변경에 실패했습니다.");
     } finally {
@@ -159,12 +167,16 @@ export default function AdminUsersPage() {
           <strong>{users.length.toLocaleString()}</strong>
         </article>
         <article className="admin-summary-card">
+          <span>운영자</span>
+          <strong>{operatorCount.toLocaleString()}</strong>
+        </article>
+        <article className="admin-summary-card">
           <span>관리자</span>
           <strong>{adminCount.toLocaleString()}</strong>
         </article>
         <article className="admin-summary-card">
           <span>일반 회원</span>
-          <strong>{(users.length - adminCount).toLocaleString()}</strong>
+          <strong>{(users.length - operatorCount - adminCount).toLocaleString()}</strong>
         </article>
       </div>
 
@@ -194,20 +206,25 @@ export default function AdminUsersPage() {
                   <td>{user.userId}</td>
                   <td>{formatKoreanDateTime(user.createdAt)}</td>
                   <td>
-                    <span className={`role-badge ${user.role === "ROLE_ADMIN" ? "admin" : "user"}`}>
+                    <span className={`role-badge ${user.role === ROLE_USER ? "user" : "admin"}`}>
                       {roleLabels[user.role] || user.role}
                     </span>
                   </td>
                   <td>
-                    <select
-                      className="admin-role-select"
-                      value={user.role}
-                      disabled={updatingUserNo === user.no}
-                      onChange={(event) => updateRole(user.no, event.target.value)}
-                    >
-                      <option value="ROLE_USER">일반 회원</option>
-                      <option value="ROLE_ADMIN">관리자</option>
-                    </select>
+                    {canManageRoles(currentRole) ? (
+                      <select
+                        className="admin-role-select"
+                        value={user.role}
+                        disabled={updatingUserNo === user.no}
+                        onChange={(event) => updateRole(user.no, event.target.value)}
+                      >
+                        <option value={ROLE_USER}>일반 회원</option>
+                        <option value={ROLE_ADMIN}>관리자</option>
+                        <option value={ROLE_OPERATOR}>운영자</option>
+                      </select>
+                    ) : (
+                      <span className="admin-muted">운영자만 변경 가능</span>
+                    )}
                   </td>
                 </tr>
               ))
