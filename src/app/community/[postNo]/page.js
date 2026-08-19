@@ -9,6 +9,7 @@ import {
   getAuthToken,
   isStoredLoginActive,
 } from "../../utils/auth";
+import { getOrCreateVisitorId } from "../../utils/visitor";
 import { getCommunityCategoryLabel, WRITABLE_MEMBER_CATEGORIES } from "../community";
 import { canManageCommunity, canWriteCommunity, hasAdminAccess, isOperator, ROLE_USER } from "../permissions";
 
@@ -102,6 +103,7 @@ export default function CommunityDetailPage() {
 
       const result = await response.json();
       setPost(result.data);
+      recordPostView();
       await loadComments();
     } catch (err) {
       setError(err.message || "게시글을 불러오지 못했습니다.");
@@ -351,6 +353,36 @@ export default function CommunityDetailPage() {
       setPostActionError(err.message || "게시글 삭제에 실패했습니다.");
     } finally {
       setIsDeletingPost(false);
+    }
+  };
+
+  const recordPostView = async () => {
+    const postNoKey = String(postNo);
+    try {
+      const sessionValue = getAuthToken();
+      const response = await fetch(`${API_BASE_URL}/community/posts/${postNo}/views`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(sessionValue ? { Authorization: `Bearer ${sessionValue}` } : {}),
+        },
+        body: JSON.stringify({ visitorId: getOrCreateVisitorId() }),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const result = await response.json();
+      if (typeof result.data?.viewCount === "number") {
+        setPost((currentPost) => (
+          currentPost && String(currentPost.no) === postNoKey
+            ? { ...currentPost, viewCount: result.data.viewCount }
+            : currentPost
+        ));
+      }
+    } catch {
+      // 조회수 집계 실패가 게시글과 댓글 표시를 막으면 안 됩니다.
     }
   };
 
